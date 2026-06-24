@@ -199,6 +199,14 @@ body {
 .visit-type-btn .label { font-size: 14px; font-weight: 600; color: var(--gray-800); }
 .visit-type-btn .sub { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
 
+.emoji-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.emoji-btn {
+  font-size: 22px; padding: 8px 0; background: white; cursor: pointer;
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); transition: all 0.15s;
+}
+.emoji-btn:active { transform: scale(0.94); }
+.emoji-btn.active { border-color: var(--brand); background: var(--brand-light); }
+
 /* LOG ITEMS */
 .log-item {
   display: flex; align-items: flex-start; gap: 12px;
@@ -453,6 +461,16 @@ body {
     </div>
 
     <div class="card">
+      <div class="card-title" id="label-bezoektypes">Bezoektypes beheren</div>
+      <div id="admin-types-list"></div>
+      <div class="divider"></div>
+      <button class="btn btn-outline mt-8" onclick="openAddTypeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span id="label-typetoevoegen">Bezoektype toevoegen</span>
+      </button>
+    </div>
+
+    <div class="card">
       <div class="card-title">Google Sheets Setup</div>
       <div class="form-group">
         <label class="form-label">Spreadsheet ID</label>
@@ -571,6 +589,27 @@ body {
   </div>
 </div>
 
+<!-- ===== MODAL: Add Bezoektype ===== -->
+<div class="modal-overlay" id="modal-add-type">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="modal-type-title">Bezoektype toevoegen</h3>
+    <div class="form-group">
+      <label class="form-label" id="label-type-icoon">Icoon</label>
+      <div class="emoji-grid" id="emoji-grid"></div>
+      <input type="text" class="form-input mt-8" id="new-type-icon" maxlength="2" placeholder="of plak een eigen emoji" oninput="clearEmojiSelection()">
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="label-type-naam">Naam bezoektype</label>
+      <input type="text" class="form-input" id="new-type-name" placeholder="bijv. Materiaallevering">
+    </div>
+    <div class="gap-8">
+      <button class="btn btn-primary" onclick="saveNewVisitType()" id="btn-save-type">Toevoegen</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-add-type')">Annuleren</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL: Google Sheets Guide ===== -->
 <div class="modal-overlay" id="modal-sheets-guide">
   <div class="modal">
@@ -578,7 +617,7 @@ body {
     <h3>📋 Google Sheets Installatiegids</h3>
     <div style="font-size:14px;line-height:1.7;color:var(--gray-700);">
       <p style="margin-bottom:12px;"><strong>Stap 1: Google Sheet aanmaken</strong><br>
-      Maak één nieuw, leeg Google Spreadsheet aan op <a href="https://sheets.google.com" target="_blank" style="color:var(--brand);">sheets.google.com</a>. De tabbladen <em>Medewerkers</em>, <em>Werven</em> en <em>Registraties</em> worden bij de eerste sync automatisch aangemaakt — je hoeft zelf niets in te vullen.</p>
+      Maak één nieuw, leeg Google Spreadsheet aan op <a href="https://sheets.google.com" target="_blank" style="color:var(--brand);">sheets.google.com</a>. De tabbladen <em>Medewerkers</em>, <em>Werven</em>, <em>Bezoektypes</em> en <em>Registraties</em> worden bij de eerste sync automatisch aangemaakt — je hoeft zelf niets in te vullen.</p>
       
       <p style="margin-bottom:12px;"><strong>Stap 2: Apps Script openen</strong><br>
       In het spreadsheet: Extensies → Apps Script. Vervang alle code door het script hieronder.</p>
@@ -592,21 +631,36 @@ body {
  * toegang &quot;Iedereen&quot;. Kopieer de /exec-URL naar de app
  * (Beheer -&gt; Google Sheets Setup -&gt; Apps Script URL).
  *
- * De drie tabbladen (Medewerkers, Werven, Registraties) worden
+ * De tabbladen (Medewerkers, Werven, Bezoektypes, Registraties) worden
  * automatisch aangemaakt. Bij de eerste keer wordt een
  * standaard-admin aangemaakt:  login: admin   wachtwoord: admin123
  * (wijzig dit nadien via Beheer of rechtstreeks in het tabblad).
  ****************************************************************/
 
-var SHEETS = { users: &#x27;Medewerkers&#x27;, sites: &#x27;Werven&#x27;, records: &#x27;Registraties&#x27; };
+var SHEETS = { users: &#x27;Medewerkers&#x27;, sites: &#x27;Werven&#x27;, records: &#x27;Registraties&#x27;, types: &#x27;Bezoektypes&#x27; };
 
 var HEADERS = {
   users:   [&#x27;id&#x27;, &#x27;name&#x27;, &#x27;login&#x27;, &#x27;pass&#x27;, &#x27;role&#x27;],
   sites:   [&#x27;id&#x27;, &#x27;name&#x27;, &#x27;location&#x27;, &#x27;client&#x27;],
+  types:   [&#x27;id&#x27;, &#x27;icon&#x27;, &#x27;nl&#x27;, &#x27;fr&#x27;, &#x27;de&#x27;, &#x27;sub_nl&#x27;, &#x27;sub_fr&#x27;, &#x27;sub_de&#x27;],
   records: [&#x27;id&#x27;, &#x27;datum&#x27;, &#x27;tijd&#x27;, &#x27;vertrek_tijd&#x27;, &#x27;duur&#x27;, &#x27;gebruikerId&#x27;, &#x27;gebruiker&#x27;, &#x27;type&#x27;,
             &#x27;werf&#x27;, &#x27;bezoektype&#x27;, &#x27;bezoektypeLabel&#x27;,
             &#x27;gps_lat&#x27;, &#x27;gps_lon&#x27;, &#x27;gps_vertrek_lat&#x27;, &#x27;gps_vertrek_lon&#x27;, &#x27;opmerkingen&#x27;]
 };
+
+// Standaard-bezoektypes (worden bij de eerste keer in het tabblad Bezoektypes gezet).
+var DEFAULT_TYPES = [
+  [&#x27;voorbereiding&#x27;, &#x27;🗂️&#x27;, &#x27;Voorbereiding werf&#x27;, &#x27;Préparation chantier&#x27;, &#x27;Baustellenvorbereitung&#x27;, &#x27;Eerste bezoek &amp; planning&#x27;, &#x27;Première visite &amp; planification&#x27;, &#x27;Erster Besuch &amp; Planung&#x27;],
+  [&#x27;absteckung&#x27;, &#x27;📍&#x27;, &#x27;Absteckung (GPS)&#x27;, &#x27;Absteckung (GPS)&#x27;, &#x27;Absteckung (GPS)&#x27;, &#x27;Uitmeten met GPS coördinaten&#x27;, &#x27;Mesure avec coordonnées GPS&#x27;, &#x27;GPS-Koordinaten abstecken&#x27;],
+  [&#x27;platform-opbouw&#x27;, &#x27;🏗️&#x27;, &#x27;Platform opbouw&#x27;, &#x27;Construction plateforme&#x27;, &#x27;Plattformaufbau&#x27;, &#x27;Opbouw van het werkplatform&#x27;, &#x27;Construction de la plateforme&#x27;, &#x27;Aufbau der Arbeitsplattform&#x27;],
+  [&#x27;voortgang&#x27;, &#x27;📊&#x27;, &#x27;Voortgang controle&#x27;, &#x27;Contrôle avancement&#x27;, &#x27;Fortschrittskontrolle&#x27;, &#x27;Algemene voortgang werf&#x27;, &#x27;Avancement général du chantier&#x27;, &#x27;Allgemeiner Baufortschritt&#x27;],
+  [&#x27;veiligheid&#x27;, &#x27;🦺&#x27;, &#x27;Veiligheid &amp; PBM&#x27;, &#x27;Sécurité &amp; EPI&#x27;, &#x27;Sicherheit &amp; PSA&#x27;, &#x27;Controle veiligheid &amp; PBM&#x27;, &#x27;Contrôle sécurité &amp; EPI&#x27;, &#x27;Sicherheitskontrolle &amp; PSA&#x27;],
+  [&#x27;boorploeg&#x27;, &#x27;⚙️&#x27;, &#x27;Boorploeg activiteiten&#x27;, &#x27;Équipe de forage&#x27;, &#x27;Bohrteam-Aktivitäten&#x27;, &#x27;Opvolging boorwerkzaamheden&#x27;, &#x27;Suivi des travaux de forage&#x27;, &#x27;Überwachung der Bohrarbeiten&#x27;],
+  [&#x27;sanitair-burelen&#x27;, &#x27;🚽&#x27;, &#x27;Sanitair &amp; burelen&#x27;, &#x27;Sanitaires &amp; bureaux&#x27;, &#x27;Sanitär &amp; Büros&#x27;, &#x27;Controle voorzieningen&#x27;, &#x27;Vérification des installations&#x27;, &#x27;Kontrolle der Einrichtungen&#x27;],
+  [&#x27;hekkens&#x27;, &#x27;🚧&#x27;, &#x27;Werfhekkens&#x27;, &#x27;Clôtures de chantier&#x27;, &#x27;Bauzäune&#x27;, &#x27;Controle werfafscherming&#x27;, &#x27;Contrôle des clôtures&#x27;, &#x27;Kontrolle der Bauabsperrung&#x27;],
+  [&#x27;terugbouw&#x27;, &#x27;🔄&#x27;, &#x27;Terugbouw werf&#x27;, &#x27;Démontage chantier&#x27;, &#x27;Rückbau Baustelle&#x27;, &#x27;Opvolging afbraak en opruimen&#x27;, &#x27;Suivi du démontage&#x27;, &#x27;Abbau und Aufräumen&#x27;],
+  [&#x27;overgave-tennet&#x27;, &#x27;✅&#x27;, &#x27;Overgave aan Tennet&#x27;, &#x27;Remise à Tennet&#x27;, &#x27;Übergabe an Tennet&#x27;, &#x27;Finale inspectie en overdracht&#x27;, &#x27;Inspection finale et transfert&#x27;, &#x27;Endinspektion und Übergabe&#x27;]
+];
 
 function sheet_(name, headers) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -660,6 +714,14 @@ function getSites_() {
   return readAll_(sh).map(function (s) { s.id = Number(s.id); return s; });
 }
 
+function getTypes_() {
+  var sh = sheet_(SHEETS.types, HEADERS.types);
+  if (sh.getLastRow() === 1) {
+    sh.getRange(2, 1, DEFAULT_TYPES.length, DEFAULT_TYPES[0].length).setValues(DEFAULT_TYPES);
+  }
+  return readAll_(sh).map(function (tp) { tp.id = String(tp.id); return tp; });
+}
+
 function getRecords_() {
   var sh = sheet_(SHEETS.records, HEADERS.records);
   return readAll_(sh).map(function (r) {
@@ -680,7 +742,7 @@ function json_(obj) {
 function doGet(e) {
   var action = (e &amp;&amp; e.parameter &amp;&amp; e.parameter.action) || &#x27;getAll&#x27;;
   if (action === &#x27;getAll&#x27;) {
-    return json_({ ok: true, users: getUsers_(), sites: getSites_(), records: getRecords_() });
+    return json_({ ok: true, users: getUsers_(), sites: getSites_(), types: getTypes_(), records: getRecords_() });
   }
   return json_({ ok: true });
 }
@@ -713,6 +775,15 @@ function doPost(e) {
 
     } else if (a === &#x27;deleteSite&#x27;) {
       deleteById_(SHEETS.sites, d.id);
+
+    } else if (a === &#x27;addType&#x27;) {
+      var tp = d.type || {};
+      getTypes_(); // zorgt dat sheet + standaardtypes bestaan
+      var ts = sheet_(SHEETS.types, HEADERS.types);
+      if (!idExists_(ts, tp.id)) appendByHeader_(ts, tp);
+
+    } else if (a === &#x27;deleteType&#x27;) {
+      deleteById_(SHEETS.types, d.id);
     }
 
     return json_({ ok: true });
@@ -729,7 +800,7 @@ function deleteById_(name, id) {
   if (!sh) return;
   var values = sh.getDataRange().getValues();
   for (var i = values.length - 1; i &gt;= 1; i--) {
-    if (Number(values[i][0]) === Number(id)) sh.deleteRow(i + 1);
+    if (String(values[i][0]) === String(id)) sh.deleteRow(i + 1);
   }
 }
 
@@ -737,7 +808,7 @@ function idExists_(sh, id) {
   if (sh.getLastRow() &lt; 2) return false;
   var ids = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
   for (var i = 0; i &lt; ids.length; i++) {
-    if (Number(ids[i][0]) === Number(id)) return true;
+    if (String(ids[i][0]) === String(id)) return true;
   }
   return false;
 }</div>
@@ -784,6 +855,7 @@ function initDB() {
     ]);
   }
   if (!DB.get('records')) DB.set('records', []);
+  if (!DB.get('visitTypes')) DB.set('visitTypes', DEFAULT_VISIT_TYPES);
   if (!DB.get('sheetConfig')) DB.set('sheetConfig', { id:'', url:'' });
   if (!DB.get('pending')) DB.set('pending', []);
 }
@@ -826,6 +898,7 @@ async function pullData() {
     if (data && data.ok) {
       if (Array.isArray(data.users) && data.users.length) DB.set('users', data.users);
       if (Array.isArray(data.sites)) DB.set('sites', data.sites);
+      if (Array.isArray(data.types) && data.types.length) DB.set('visitTypes', data.types);
       if (Array.isArray(data.records)) DB.set('records', data.records);
       setSyncState('connected');
       return true;
@@ -922,6 +995,10 @@ const T = {
     toastAlActief: 'Er loopt al een werfbezoek',
     toastAankomstWerf: 'Aankomst geregistreerd 📍', toastAankomstGeenGps: 'Aankomst geregistreerd (zonder GPS)',
     confirmAnnuleer: 'Dit werfbezoek annuleren? Er wordt niets bewaard.',
+    labelBezoektypes: 'Bezoektypes beheren', labelTypeToevoegen: 'Bezoektype toevoegen',
+    labelTypeIcoon: 'Icoon', labelTypeNaam: 'Naam bezoektype',
+    toastTypeAdded: 'Bezoektype toegevoegd', toastTypeMissing: 'Geef een naam op',
+    toastTypeMin: 'Minstens één bezoektype nodig', confirmTypeDelete: 'Dit bezoektype verwijderen?',
     sheets: { notConfigured: 'Lokaal (geen centrale opslag)', connected: 'Gesynchroniseerd', syncing: 'Synchroniseren...', offline: 'Offline — wordt later verstuurd', error: 'Verbindingsfout', queued: 'in wachtrij' }
   },
   fr: {
@@ -969,6 +1046,10 @@ const T = {
     toastAlActief: 'Une visite est déjà en cours',
     toastAankomstWerf: 'Arrivée enregistrée 📍', toastAankomstGeenGps: 'Arrivée enregistrée (sans GPS)',
     confirmAnnuleer: 'Annuler cette visite ? Rien ne sera enregistré.',
+    labelBezoektypes: 'Gérer les types de visite', labelTypeToevoegen: 'Ajouter un type',
+    labelTypeIcoon: 'Icône', labelTypeNaam: 'Nom du type de visite',
+    toastTypeAdded: 'Type de visite ajouté', toastTypeMissing: 'Indiquez un nom',
+    toastTypeMin: 'Au moins un type requis', confirmTypeDelete: 'Supprimer ce type de visite ?',
     sheets: { notConfigured: 'Local (pas de stockage central)', connected: 'Synchronisé', syncing: 'Synchronisation...', offline: 'Hors ligne — envoi différé', error: 'Erreur de connexion', queued: 'en attente' }
   },
   de: {
@@ -1016,22 +1097,35 @@ const T = {
     toastAlActief: 'Ein Besuch läuft bereits',
     toastAankomstWerf: 'Ankunft erfasst 📍', toastAankomstGeenGps: 'Ankunft erfasst (ohne GPS)',
     confirmAnnuleer: 'Diesen Besuch abbrechen? Es wird nichts gespeichert.',
+    labelBezoektypes: 'Besuchstypen verwalten', labelTypeToevoegen: 'Besuchstyp hinzufügen',
+    labelTypeIcoon: 'Symbol', labelTypeNaam: 'Name des Besuchstyps',
+    toastTypeAdded: 'Besuchstyp hinzugefügt', toastTypeMissing: 'Bitte einen Namen angeben',
+    toastTypeMin: 'Mindestens ein Typ nötig', confirmTypeDelete: 'Diesen Besuchstyp löschen?',
     sheets: { notConfigured: 'Lokal (kein zentraler Speicher)', connected: 'Synchronisiert', syncing: 'Synchronisierung...', offline: 'Offline — wird später gesendet', error: 'Verbindungsfehler', queued: 'in Warteschlange' }
   }
 };
 
-const VISIT_TYPES = [
-  { id:'voorbereiding', icon:'🗂️', nl:'Voorbereiding werf', fr:'Préparation chantier', de:'Baustellenvorbereitung', sub:{ nl:'Eerste bezoek & planning', fr:'Première visite & planification', de:'Erster Besuch & Planung' } },
-  { id:'absteckung', icon:'📍', nl:'Absteckung (GPS)', fr:'Absteckung (GPS)', de:'Absteckung (GPS)', sub:{ nl:'Uitmeten met GPS coördinaten', fr:'Mesure avec coordonnées GPS', de:'GPS-Koordinaten abstecken' }, gps:true },
-  { id:'platform-opbouw', icon:'🏗️', nl:'Platform opbouw', fr:'Construction plateforme', de:'Plattformaufbau', sub:{ nl:'Opbouw van het werkplatform', fr:'Construction de la plateforme', de:'Aufbau der Arbeitsplattform' } },
-  { id:'voortgang', icon:'📊', nl:'Voortgang controle', fr:'Contrôle avancement', de:'Fortschrittskontrolle', sub:{ nl:'Algemene voortgang werf', fr:'Avancement général du chantier', de:'Allgemeiner Baufortschritt' } },
-  { id:'veiligheid', icon:'🦺', nl:'Veiligheid & PBM', fr:'Sécurité & EPI', de:'Sicherheit & PSA', sub:{ nl:'Controle veiligheid & persoonlijke beschermingsmiddelen', fr:'Contrôle sécurité & équipements de protection', de:'Sicherheitskontrolle & persönliche Schutzausrüstung' } },
-  { id:'boorploeg', icon:'⚙️', nl:'Boorploeg activiteiten', fr:'Équipe de forage', de:'Bohrteam-Aktivitäten', sub:{ nl:'Opvolging boorwerkzaamheden', fr:'Suivi des travaux de forage', de:'Überwachung der Bohrarbeiten' } },
-  { id:'sanitair-burelen', icon:'🚽', nl:'Sanitair & burelen', fr:'Sanitaires & bureaux', de:'Sanitär & Büros', sub:{ nl:'Controle of voorzieningen aanwezig zijn', fr:'Vérification des installations', de:'Kontrolle der Einrichtungen' } },
-  { id:'hekkens', icon:'🚧', nl:'Werfhekkens', fr:'Clôtures de chantier', de:'Bauzäune', sub:{ nl:'Controle werfafscherming en hekkens', fr:'Contrôle des clôtures et barrières', de:'Kontrolle der Bauabsperrung' } },
-  { id:'terugbouw', icon:'🔄', nl:'Terugbouw werf', fr:'Démontage chantier', de:'Rückbau Baustelle', sub:{ nl:'Opvolging afbraak en opruimen', fr:'Suivi du démontage et nettoyage', de:'Abbau und Aufräumen' } },
-  { id:'overgave-tennet', icon:'✅', nl:'Overgave aan Tennet', fr:'Remise à Tennet', de:'Übergabe an Tennet', sub:{ nl:'Finale inspectie en overdracht', fr:'Inspection finale et transfert', de:'Endinspektion und Übergabe' } }
+const DEFAULT_VISIT_TYPES = [
+  { id:'voorbereiding', icon:'🗂️', nl:'Voorbereiding werf', fr:'Préparation chantier', de:'Baustellenvorbereitung', sub_nl:'Eerste bezoek & planning', sub_fr:'Première visite & planification', sub_de:'Erster Besuch & Planung' },
+  { id:'absteckung', icon:'📍', nl:'Absteckung (GPS)', fr:'Absteckung (GPS)', de:'Absteckung (GPS)', sub_nl:'Uitmeten met GPS coördinaten', sub_fr:'Mesure avec coordonnées GPS', sub_de:'GPS-Koordinaten abstecken' },
+  { id:'platform-opbouw', icon:'🏗️', nl:'Platform opbouw', fr:'Construction plateforme', de:'Plattformaufbau', sub_nl:'Opbouw van het werkplatform', sub_fr:'Construction de la plateforme', sub_de:'Aufbau der Arbeitsplattform' },
+  { id:'voortgang', icon:'📊', nl:'Voortgang controle', fr:'Contrôle avancement', de:'Fortschrittskontrolle', sub_nl:'Algemene voortgang werf', sub_fr:'Avancement général du chantier', sub_de:'Allgemeiner Baufortschritt' },
+  { id:'veiligheid', icon:'🦺', nl:'Veiligheid & PBM', fr:'Sécurité & EPI', de:'Sicherheit & PSA', sub_nl:'Controle veiligheid & persoonlijke beschermingsmiddelen', sub_fr:'Contrôle sécurité & équipements de protection', sub_de:'Sicherheitskontrolle & persönliche Schutzausrüstung' },
+  { id:'boorploeg', icon:'⚙️', nl:'Boorploeg activiteiten', fr:'Équipe de forage', de:'Bohrteam-Aktivitäten', sub_nl:'Opvolging boorwerkzaamheden', sub_fr:'Suivi des travaux de forage', sub_de:'Überwachung der Bohrarbeiten' },
+  { id:'sanitair-burelen', icon:'🚽', nl:'Sanitair & burelen', fr:'Sanitaires & bureaux', de:'Sanitär & Büros', sub_nl:'Controle of voorzieningen aanwezig zijn', sub_fr:'Vérification des installations', sub_de:'Kontrolle der Einrichtungen' },
+  { id:'hekkens', icon:'🚧', nl:'Werfhekkens', fr:'Clôtures de chantier', de:'Bauzäune', sub_nl:'Controle werfafscherming en hekkens', sub_fr:'Contrôle des clôtures et barrières', sub_de:'Kontrolle der Bauabsperrung' },
+  { id:'terugbouw', icon:'🔄', nl:'Terugbouw werf', fr:'Démontage chantier', de:'Rückbau Baustelle', sub_nl:'Opvolging afbraak en opruimen', sub_fr:'Suivi du démontage et nettoyage', sub_de:'Abbau und Aufräumen' },
+  { id:'overgave-tennet', icon:'✅', nl:'Overgave aan Tennet', fr:'Remise à Tennet', de:'Übergabe an Tennet', sub_nl:'Finale inspectie en overdracht', sub_fr:'Inspection finale et transfert', sub_de:'Endinspektion und Übergabe' }
 ];
+
+// Beheerde lijst (gedeeld via de Sheet); valt terug op de standaardlijst als ze nog leeg is.
+function getVisitTypes() {
+  const v = DB.get('visitTypes');
+  return (Array.isArray(v) && v.length) ? v : DEFAULT_VISIT_TYPES;
+}
+function findVisitType(id) { return getVisitTypes().find(v => String(v.id) === String(id)); }
+function vtLabel(vt) { return vt ? (vt[currentLang] || vt.nl || vt.name || vt.id) : ''; }
+function vtSub(vt) { return vt ? (vt['sub_' + currentLang] || vt.sub_nl || '') : ''; }
 
 // ============================================================
 // LANGUAGE
@@ -1086,6 +1180,11 @@ function applyLang() {
   set('label-toevoegen', l.labelToevoegen);
   set('label-werven', l.labelWerven);
   set('label-werftoevoegen', l.labelWerfToevoegen);
+  set('label-bezoektypes', l.labelBezoektypes);
+  set('label-typetoevoegen', l.labelTypeToevoegen);
+  set('modal-type-title', l.labelTypeToevoegen);
+  set('label-type-icoon', l.labelTypeIcoon);
+  set('label-type-naam', l.labelTypeNaam);
   set('label-opslaan', l.labelOpslaan);
   set('label-gids', l.labelGids);
   set('sheets-help-text', l.sheetsHelp);
@@ -1238,7 +1337,7 @@ function loadTodayLog() {
     let icon, cls, desc;
     if (r.type === 'vertrek') { icon = '🚗'; cls = 'vertrek'; desc = { nl:'Vertrek thuis', fr:'Départ domicile', de:'Abfahrt' }[currentLang]; }
     else if (r.type === 'aankomst') { icon = '🏠'; cls = 'aankomst'; desc = { nl:'Thuiskomst', fr:'Retour maison', de:'Heimkunft' }[currentLang]; }
-    else { icon = '🏗️'; cls = 'werf'; const vt = VISIT_TYPES.find(v => v.id === r.bezoektype); desc = vt ? vt[currentLang] : r.bezoektype; }
+    else { icon = '🏗️'; cls = 'werf'; const vt = findVisitType(r.bezoektype); desc = vt ? vtLabel(vt) : (r.bezoektypeLabel || r.bezoektype); }
     const duurTxt = (r.type === 'werf' && r.duur) ? ` · ⏱ ${fmtDuur(r.duur)}` : '';
     return `<div class="log-item">
       <div class="log-icon ${cls}">${icon}</div>
@@ -1301,12 +1400,12 @@ function openWerfModal() {
   sel.innerHTML = sites.map(s => `<option value="${s.name}">${s.name} (${s.location})</option>`).join('');
 
   const grid = document.getElementById('visit-type-grid');
-  grid.innerHTML = VISIT_TYPES.map(vt => `
+  grid.innerHTML = getVisitTypes().map(vt => `
     <button class="visit-type-btn" id="vt-${vt.id}" onclick="selectVisitType('${vt.id}')">
-      <span class="icon">${vt.icon}</span>
+      <span class="icon">${vt.icon || '🏗️'}</span>
       <div>
-        <div class="label">${vt[currentLang]}</div>
-        <div class="sub">${vt.sub[currentLang]}</div>
+        <div class="label">${vtLabel(vt)}</div>
+        <div class="sub">${vtSub(vt)}</div>
       </div>
     </button>`).join('');
 
@@ -1339,7 +1438,7 @@ async function startWerfbezoek() {
   const btn = document.getElementById('btn-save-werf');
   const werf = document.getElementById('werf-select').value;
   const opmerkingen = document.getElementById('werf-opmerkingen').value;
-  const vt = VISIT_TYPES.find(v => v.id === selectedVisitType);
+  const vt = findVisitType(selectedVisitType);
   const now = new Date();
 
   btn.disabled = true;
@@ -1352,7 +1451,7 @@ async function startWerfbezoek() {
   const visit = {
     id: Date.now(), gebruikerId: currentUser.id, gebruiker: currentUser.name,
     datum: todayKey(),
-    werf, bezoektype: selectedVisitType, bezoektypeLabel: vt[currentLang],
+    werf, bezoektype: selectedVisitType, bezoektypeLabel: vtLabel(vt),
     aankomstTs: now.getTime(),
     aankomstTijd: now.toLocaleTimeString('nl-BE', { hour:'2-digit', minute:'2-digit' }),
     gps_lat: gps ? gps.lat : '', gps_lon: gps ? gps.lon : '',
@@ -1377,10 +1476,10 @@ function renderActiveVisit() {
   }
   if (startBtn) startBtn.style.display = 'none';
   card.style.display = 'block';
-  const vt = VISIT_TYPES.find(x => x.id === v.bezoektype);
-  document.getElementById('active-icon').textContent = vt ? vt.icon : '🏗️';
+  const vt = findVisitType(v.bezoektype);
+  document.getElementById('active-icon').textContent = vt ? (vt.icon || '🏗️') : '🏗️';
   document.getElementById('active-werf').textContent = v.werf;
-  document.getElementById('active-type').textContent = vt ? vt[currentLang] : v.bezoektypeLabel;
+  document.getElementById('active-type').textContent = vt ? vtLabel(vt) : v.bezoektypeLabel;
   document.getElementById('active-aankomst').textContent = v.aankomstTijd;
   document.getElementById('active-gps').textContent = (v.gps_lat)
     ? `📍 ${t('gpsVastgelegd')}: ${v.gps_lat}, ${v.gps_lon}`
@@ -1487,11 +1586,11 @@ function renderHistory() {
         ${reisMin !== null ? `<span class="badge badge-soft">🚗 ${L.reis}: ${fmtDuur(reisMin)}</span>` : ''}
       </div>` : ''}
       ${recs.map(r => {
-        const vt = r.type === 'werf' ? VISIT_TYPES.find(v => v.id === r.bezoektype) : null;
+        const vt = r.type === 'werf' ? findVisitType(r.bezoektype) : null;
         const icon = r.type === 'vertrek' ? '🚗' : r.type === 'aankomst' ? '🏠' : (vt?.icon || '🏗️');
         const label = r.type === 'vertrek' ? {nl:'Vertrek',fr:'Départ',de:'Abfahrt'}[currentLang] :
                       r.type === 'aankomst' ? {nl:'Thuiskomst',fr:'Retour',de:'Heimkunft'}[currentLang] :
-                      (vt?.[currentLang] || r.bezoektype);
+                      (vt ? vtLabel(vt) : (r.bezoektypeLabel || r.bezoektype));
         return `<div class="log-item">
           <div style="width:32px;text-align:center;font-size:16px;">${icon}</div>
           <div style="flex:1;">
@@ -1534,7 +1633,20 @@ function renderAdmin() {
       </div>
       <button onclick="deleteSite(${s.id})" style="background:var(--danger-light);color:var(--danger);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;">✕</button>
     </div>`).join('');
-  
+
+  const types = getVisitTypes();
+  document.getElementById('admin-types-list').innerHTML = types.map(vt => `
+    <div class="admin-item">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-size:22px;">${vt.icon || '🏗️'}</div>
+        <div>
+          <div class="name">${vtLabel(vt)}</div>
+          ${vtSub(vt) ? `<div class="role">${vtSub(vt)}</div>` : ''}
+        </div>
+      </div>
+      <button onclick="deleteVisitType('${vt.id}')" style="background:var(--danger-light);color:var(--danger);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;">✕</button>
+    </div>`).join('');
+
   const cfg = DB.get('sheetConfig') || {};
   document.getElementById('admin-sheet-id').value = cfg.id || '';
   document.getElementById('admin-script-url').value = cfg.url || '';
@@ -1542,6 +1654,55 @@ function renderAdmin() {
 
 function openAddUserModal() { openModal('modal-add-user'); }
 function openAddSiteModal() { openModal('modal-add-site'); }
+
+const EMOJI_CHOICES = ['🏗️','📍','🗂️','📊','🦺','⚙️','🚽','🚧','🔄','✅','🚚','🧱','🔧','⚡','📦','🛠️','🏭','📋','🪧','🕳️'];
+let selectedEmoji = '';
+
+function openAddTypeModal() {
+  selectedEmoji = '';
+  document.getElementById('new-type-name').value = '';
+  document.getElementById('new-type-icon').value = '';
+  const grid = document.getElementById('emoji-grid');
+  grid.innerHTML = EMOJI_CHOICES.map(e =>
+    `<button type="button" class="emoji-btn" data-emoji="${e}" onclick="selectEmoji('${e}')">${e}</button>`
+  ).join('');
+  openModal('modal-add-type');
+}
+
+function selectEmoji(e) {
+  selectedEmoji = e;
+  document.getElementById('new-type-icon').value = '';
+  document.querySelectorAll('#emoji-grid .emoji-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.emoji === e));
+}
+function clearEmojiSelection() {
+  selectedEmoji = '';
+  document.querySelectorAll('#emoji-grid .emoji-btn').forEach(b => b.classList.remove('active'));
+}
+
+async function saveNewVisitType() {
+  const name = document.getElementById('new-type-name').value.trim();
+  const customIcon = document.getElementById('new-type-icon').value.trim();
+  const icon = customIcon || selectedEmoji || '🏗️';
+  if (!name) { showToast(t('toastTypeMissing')); return; }
+  // Eén naam voor alle talen; admin kan ze nadien in de Sheet vertalen indien gewenst.
+  const type = { id: 't' + Date.now(), icon, nl: name, fr: name, de: name, sub_nl: '', sub_fr: '', sub_de: '' };
+  const types = getVisitTypes().slice();
+  types.push(type);
+  DB.set('visitTypes', types);
+  closeModal('modal-add-type');
+  renderAdmin();
+  showToast(t('toastTypeAdded'));
+  await pushChange('addType', { type });
+}
+
+async function deleteVisitType(id) {
+  if (getVisitTypes().length <= 1) { showToast(t('toastTypeMin')); return; }
+  if (!confirm(t('confirmTypeDelete'))) return;
+  DB.set('visitTypes', getVisitTypes().filter(v => String(v.id) !== String(id)));
+  renderAdmin();
+  await pushChange('deleteType', { id });
+}
 
 async function saveNewUser() {
   const name = document.getElementById('new-user-name').value.trim();
