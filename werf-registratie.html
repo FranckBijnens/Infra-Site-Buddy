@@ -899,7 +899,16 @@ async function pullData() {
       if (Array.isArray(data.users) && data.users.length) DB.set('users', data.users);
       if (Array.isArray(data.sites)) DB.set('sites', data.sites);
       if (Array.isArray(data.types) && data.types.length) DB.set('visitTypes', data.types);
-      if (Array.isArray(data.records)) DB.set('records', data.records);
+      if (Array.isArray(data.records)) {
+        // Lokale registraties NIET overschrijven: samenvoegen op id (centraal wint),
+        // en lokaal-only registraties alsnog naar de Sheet uploaden (backend is idempotent).
+        const central = data.records;
+        const centralIds = new Set(central.map(r => String(r.id)));
+        const local = DB.get('records') || [];
+        const localOnly = local.filter(r => !centralIds.has(String(r.id)));
+        DB.set('records', central.concat(localOnly));
+        localOnly.forEach(r => { API.post('addRecord', { record: r }).catch(() => {}); });
+      }
       setSyncState('connected');
       return true;
     }
@@ -1304,19 +1313,25 @@ function updateHomeStatus() {
   const recs = getTodayRecords();
   const vRec = recs.find(r => r.type === 'vertrek');
   const aRec = recs.find(r => r.type === 'aankomst');
-  
+
   document.getElementById('status-vertrek').textContent = vRec ? vRec.tijd : '--:--';
   document.getElementById('status-bezoeken').textContent = recs.filter(r => r.type === 'werf').length;
-  
+
   if (vRec) {
     const [vh, vm] = vRec.tijd.split(':').map(Number);
     const now = new Date();
-    const mins = (now.getHours() - vh) * 60 + (now.getMinutes() - vm);
+    let mins = (now.getHours() - vh) * 60 + (now.getMinutes() - vm);
+    if (mins < 0) mins = 0;
     document.getElementById('status-uren').textContent = `${Math.floor(mins/60)}u ${mins%60}m`;
     vertrekTime = vRec.tijd;
-    document.getElementById('btn-vertrek').disabled = true;
-    document.getElementById('btn-aankomst').disabled = !!aRec;
+  } else {
+    document.getElementById('status-uren').textContent = '0u 0m';
+    vertrekTime = null;
   }
+
+  // Knopstatus ALTIJD afleiden uit de registraties van vandaag (nooit "hangend"):
+  document.getElementById('btn-vertrek').disabled = !!vRec;            // al vertrokken → uit
+  document.getElementById('btn-aankomst').disabled = !vRec || !!aRec;  // aan na vertrek, uit na thuiskomst
 }
 
 function fmtDuur(min) {
@@ -1359,10 +1374,7 @@ function registreerVertrek() {
   const tijd = now.toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'});
   const record = { id: Date.now(), gebruikerId: currentUser.id, gebruiker: currentUser.name, datum: todayKey(), tijd, type: 'vertrek' };
   saveRecord(record);
-  vertrekTime = tijd;
-  document.getElementById('btn-vertrek').disabled = true;
-  document.getElementById('btn-aankomst').disabled = false;
-  document.getElementById('status-vertrek').textContent = tijd;
+  updateHomeStatus();
   loadTodayLog();
   showToast(t('toastVertrek'));
   syncToSheets(record);
@@ -1374,9 +1386,8 @@ function registreerAankomst() {
   const tijd = now.toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'});
   const record = { id: Date.now(), gebruikerId: currentUser.id, gebruiker: currentUser.name, datum: todayKey(), tijd, type: 'aankomst' };
   saveRecord(record);
-  document.getElementById('btn-aankomst').disabled = true;
-  loadTodayLog();
   updateHomeStatus();
+  loadTodayLog();
   showToast(t('toastAankomst'));
   syncToSheets(record);
 }
@@ -1540,6 +1551,8 @@ function annuleerWerf() {
   if (!confirm(t('confirmAnnuleer'))) return;
   DB.set('activeVisit', null);
   renderActiveVisit();
+  updateHomeStatus();
+  loadTodayLog();
 }
 
 // ============================================================
