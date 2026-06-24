@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Verbraeken">
+<meta name="theme-color" content="#1D4E8F">
+<link rel="apple-touch-icon" href="verbraeken-icon.svg">
+<link rel="manifest" href="manifest.json">
+<title>Verbraeken | Werf Registratie</title>
+<style>
+:root {
+  --brand: #1D4E8F;
+  --brand-dark: #0C2F5A;
+  --brand-light: #E8F0FB;
+  --accent: #E8501A;
+  --success: #1B7A3E;
+  --success-light: #EAF5EF;
+  --warning: #B45F06;
+  --warning-light: #FEF3E2;
+  --danger: #B91C1C;
+  --danger-light: #FEF2F2;
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-200: #E5E7EB;
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-500: #6B7280;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-800: #1F2937;
+  --gray-900: #111827;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--gray-100);
+  color: var(--gray-800);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* HEADER */
+.app-header {
+  background: var(--brand);
+  color: white;
+  padding: 16px 20px 14px;
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.app-header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
+.app-header p { font-size: 12px; opacity: 0.75; margin-top: 1px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+/* BOTTOM NAV */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: white;
+  border-top: 1px solid var(--gray-200);
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 100;
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 10px 4px 8px;
+  background: none; border: none; cursor: pointer;
+  color: var(--gray-400); font-size: 10px; font-weight: 500; gap: 4px;
+  transition: color 0.15s;
+}
+.nav-btn.active { color: var(--brand); }
+.nav-btn svg { width: 22px; height: 22px; stroke-width: 1.8; }
+
+/* CONTENT */
+.content { flex: 1; overflow-y: auto; padding: 16px 16px 90px; }
+
+/* CARDS */
+.card {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-size: 13px; font-weight: 600; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+/* BUTTONS */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 13px 16px;
+  border-radius: var(--radius-sm); border: none; cursor: pointer;
+  font-size: 15px; font-weight: 600; transition: all 0.15s;
+}
+.btn-primary { background: var(--brand); color: white; }
+.btn-primary:active { background: var(--brand-dark); transform: scale(0.98); }
+.btn-success { background: var(--success); color: white; }
+.btn-success:active { transform: scale(0.98); }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:active { transform: scale(0.98); }
+.btn-outline { background: white; color: var(--brand); border: 1.5px solid var(--brand); }
+.btn-outline:active { background: var(--brand-light); transform: scale(0.98); }
+.btn-gray { background: var(--gray-100); color: var(--gray-700); }
+.btn-sm { padding: 8px 12px; font-size: 13px; width: auto; border-radius: 8px; }
+
+/* FORMS */
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-600); margin-bottom: 5px; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 11px 13px;
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+  font-size: 15px; background: white; color: var(--gray-800);
+  transition: border-color 0.15s; appearance: none;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none; border-color: var(--brand);
+}
+.form-textarea { min-height: 80px; resize: vertical; font-family: inherit; }
+.form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+/* STATUS BADGES */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 600;
+}
+.badge-success { background: var(--success-light); color: var(--success); }
+.badge-warning { background: var(--warning-light); color: var(--warning); }
+.badge-danger { background: var(--danger-light); color: var(--danger); }
+.badge-info { background: var(--brand-light); color: var(--brand); }
+.badge-soft { background: var(--gray-100); color: var(--gray-600); }
+
+/* LOGIN */
+#screen-login {
+  background: var(--brand);
+  justify-content: center; align-items: center; padding: 24px;
+}
+.login-logo {
+  text-align: center; margin-bottom: 40px; color: white;
+}
+.login-logo .logo-mark {
+  width: 64px; height: 64px; background: rgba(255,255,255,0.15);
+  border-radius: 18px; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px; font-size: 28px; font-weight: 800; color: white;
+}
+.login-logo h1 { font-size: 22px; font-weight: 700; }
+.login-logo p { font-size: 13px; opacity: 0.7; margin-top: 4px; }
+.login-box {
+  background: white; border-radius: 20px; padding: 24px;
+  width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.login-box h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--gray-800); }
+.lang-switcher { display: flex; gap: 6px; margin-bottom: 20px; }
+.lang-btn {
+  flex: 1; padding: 7px; border: 1.5px solid var(--gray-200);
+  border-radius: 8px; background: none; cursor: pointer; font-size: 13px; font-weight: 600;
+  color: var(--gray-500); transition: all 0.15s;
+}
+.lang-btn.active { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
+
+/* TIME STATUS */
+.time-status-card {
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: white; border-radius: var(--radius); padding: 20px;
+  margin-bottom: 12px;
+}
+.time-status-card .current-time { font-size: 36px; font-weight: 700; letter-spacing: -1px; }
+.time-status-card .current-date { font-size: 13px; opacity: 0.75; margin-bottom: 16px; }
+.time-status-card .status-row { display: flex; gap: 8px; }
+.status-item { flex: 1; background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; }
+.status-item .label { font-size: 10px; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.5px; }
+.status-item .value { font-size: 15px; font-weight: 700; margin-top: 2px; }
+
+/* SITE VISIT TYPES */
+.visit-type-grid { display: grid; gap: 8px; }
+.visit-type-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 14px; background: white;
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+  cursor: pointer; text-align: left; transition: all 0.15s;
+}
+.visit-type-btn:active { border-color: var(--brand); background: var(--brand-light); }
+.visit-type-btn .icon { font-size: 22px; width: 36px; text-align: center; }
+.visit-type-btn .label { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+.visit-type-btn .sub { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+
+/* LOG ITEMS */
+.log-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--gray-100);
+}
+.log-item:last-child { border-bottom: none; padding-bottom: 0; }
+.log-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.log-icon.vertrek { background: var(--warning-light); }
+.log-icon.aankomst { background: var(--success-light); }
+.log-icon.werf { background: var(--brand-light); }
+.log-info .time { font-size: 13px; font-weight: 700; color: var(--gray-800); }
+.log-info .desc { font-size: 13px; color: var(--gray-500); margin-top: 1px; }
+.log-info .note { font-size: 12px; color: var(--gray-400); margin-top: 2px; font-style: italic; }
+
+/* ADMIN */
+.admin-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid var(--gray-100);
+}
+.admin-item:last-child { border-bottom: none; }
+.admin-item .name { font-weight: 600; font-size: 15px; }
+.admin-item .role { font-size: 12px; color: var(--gray-400); margin-top: 1px; }
+.avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--brand-light); color: var(--brand);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; flex-shrink: 0;
+}
+
+/* MODAL */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4); z-index: 200;
+  align-items: flex-end; justify-content: center;
+  padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: white; border-radius: 20px 20px 16px 16px;
+  width: 100%; max-width: 500px; max-height: 90vh;
+  overflow-y: auto; padding: 20px;
+}
+.modal-handle { width: 36px; height: 4px; background: var(--gray-200); border-radius: 2px; margin: 0 auto 16px; }
+.modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+
+/* GOOGLE SHEETS STATUS */
+.sheets-status {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; background: var(--gray-50);
+  border: 1px solid var(--gray-200); border-radius: var(--radius-sm);
+  font-size: 13px; color: var(--gray-600);
+}
+.sheets-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-300); flex-shrink: 0; }
+.sheets-dot.connected { background: var(--success); }
+.sheets-dot.syncing { background: #F59E0B; animation: pulse-dot 1s ease-in-out infinite; }
+.sheets-dot.offline { background: var(--danger); }
+@keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--gray-900); color: white;
+  padding: 10px 18px; border-radius: 20px; font-size: 13px; font-weight: 500;
+  opacity: 0; transition: all 0.25s; z-index: 300; white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* UTILITY */
+.divider { height: 1px; background: var(--gray-100); margin: 16px 0; }
+.text-center { text-align: center; }
+.text-sm { font-size: 13px; }
+.text-muted { color: var(--gray-500); }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.gap-8 { display: flex; flex-direction: column; gap: 8px; }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ===== SCREEN: LOGIN ===== -->
+<div id="screen-login" class="screen active">
+  <div class="login-logo">
+    <div class="logo-mark">V</div>
+    <h1>Infra Group Verbraeken</h1>
+    <p id="login-subtitle">Werf Registratie Systeem</p>
+  </div>
+  <div class="login-box">
+    <div class="lang-switcher">
+      <button class="lang-btn active" onclick="setLang('nl')">🇧🇪 NL</button>
+      <button class="lang-btn" onclick="setLang('fr')">🇫🇷 FR</button>
+      <button class="lang-btn" onclick="setLang('de')">🇩🇪 DE</button>
+    </div>
+    <h2 id="login-title">Inloggen</h2>
+    <div class="form-group">
+      <label class="form-label" id="label-username">Gebruikersnaam</label>
+      <input type="text" class="form-input" id="login-user" placeholder="voornaam.achternaam" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="label-password">Wachtwoord</label>
+      <input type="password" class="form-input" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div id="login-error" style="color:#B91C1C;font-size:13px;margin-bottom:12px;display:none;"></div>
+    <button class="btn btn-primary" onclick="doLogin()" id="btn-login">Inloggen</button>
+    <p class="text-center text-sm text-muted mt-12" id="login-contact">Neem contact op met de admin voor een account.</p>
+  </div>
+</div>
+
+<!-- ===== SCREEN: HOME (Dashboard) ===== -->
+<div id="screen-home" class="screen">
+  <div class="app-header">
+    <div>
+      <h1 id="header-greeting">Goedemorgen</h1>
+      <p id="header-user">Laden...</p>
+    </div>
+    <div class="header-right">
+      <button onclick="showSheetsConfig()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;padding:7px 10px;color:white;cursor:pointer;font-size:12px;">⚙ Sheets</button>
+      <button onclick="doLogout()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;padding:7px 10px;color:white;cursor:pointer;font-size:12px;" id="btn-logout">Uitloggen</button>
+    </div>
+  </div>
+  <div class="content">
+    <!-- Time card -->
+    <div class="time-status-card">
+      <div class="current-time" id="live-clock">--:--</div>
+      <div class="current-date" id="live-date">--</div>
+      <div class="status-row">
+        <div class="status-item">
+          <div class="label" id="label-vertrek">Vertrek</div>
+          <div class="value" id="status-vertrek">--:--</div>
+        </div>
+        <div class="status-item">
+          <div class="label" id="label-werkuren">Werkuren</div>
+          <div class="value" id="status-uren">0u 0m</div>
+        </div>
+        <div class="status-item">
+          <div class="label" id="label-werfbezoeken">Bezoeken</div>
+          <div class="value" id="status-bezoeken">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="card">
+      <div class="card-title" id="label-acties">Acties</div>
+      <div class="gap-8">
+        <div class="row">
+          <button class="btn btn-success" id="btn-vertrek" onclick="registreerVertrek()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12l10-10 10 10"/></svg>
+            <span id="label-vertrekbtn">Vertrek registreren</span>
+          </button>
+          <button class="btn btn-danger" id="btn-aankomst" onclick="registreerAankomst()" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V2M2 12l10 10 10-10"/></svg>
+            <span id="label-aankomstbtn">Thuiskomst</span>
+          </button>
+        </div>
+        <button class="btn btn-primary" id="btn-werfbezoek-start" onclick="openWerfModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <span id="label-werfbezoek">Werfbezoek starten</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Actief werfbezoek -->
+    <div class="card" id="active-visit-card" style="display:none;border:1.5px solid var(--brand);">
+      <div class="card-title" id="label-actief-bezoek">Actief werfbezoek</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="font-size:26px;" id="active-icon">🏗️</div>
+        <div style="flex:1;">
+          <div id="active-werf" style="font-weight:700;font-size:15px;color:var(--gray-800);"></div>
+          <div id="active-type" class="text-sm text-muted"></div>
+        </div>
+      </div>
+      <div class="row" style="margin-bottom:8px;">
+        <div>
+          <div class="text-sm text-muted" id="label-actief-aankomst">Aankomst</div>
+          <div id="active-aankomst" style="font-weight:600;">--:--</div>
+        </div>
+        <div>
+          <div class="text-sm text-muted" id="label-actief-elapsed">Tijd op werf</div>
+          <div id="active-elapsed" style="font-weight:600;color:var(--brand);">0m</div>
+        </div>
+      </div>
+      <div id="active-gps" class="text-sm text-muted" style="margin-bottom:10px;"></div>
+      <div class="form-group">
+        <label class="form-label" id="label-actief-opmerkingen">Opmerkingen</label>
+        <textarea class="form-textarea" id="active-opmerkingen" placeholder="Optionele opmerkingen..."></textarea>
+      </div>
+      <button class="btn btn-danger" id="btn-werf-verlaten" onclick="verlaatWerf()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <span id="label-werf-verlaten">Werf verlaten</span>
+      </button>
+      <button class="btn btn-gray mt-8" style="font-size:13px;" onclick="annuleerWerf()" id="btn-werf-annuleren">Bezoek annuleren</button>
+    </div>
+
+    <!-- Today's log -->
+    <div class="card">
+      <div class="card-title" id="label-logvandaag">Log vandaag</div>
+      <div id="today-log"><p class="text-muted text-sm">Nog geen registraties vandaag.</p></div>
+    </div>
+
+    <!-- Sheets sync status -->
+    <div class="sheets-status" id="sheets-status-bar">
+      <div class="sheets-dot" id="sheets-dot"></div>
+      <span id="sheets-status-text">Google Sheets niet geconfigureerd</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: HISTORY ===== -->
+<div id="screen-history" class="screen">
+  <div class="app-header">
+    <div><h1 id="label-geschiedenis">Geschiedenis</h1></div>
+    <div class="header-right">
+      <button onclick="exportCSV()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;padding:7px 10px;color:white;cursor:pointer;font-size:12px;" id="btn-export">⬇ CSV</button>
+    </div>
+  </div>
+  <div class="content">
+    <div id="history-content"></div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: ADMIN ===== -->
+<div id="screen-admin" class="screen">
+  <div class="app-header">
+    <div><h1 id="label-beheer">Beheer</h1></div>
+  </div>
+  <div class="content">
+    <div class="card">
+      <div class="card-title" id="label-medewerkers">Medewerkers</div>
+      <div id="admin-users-list"></div>
+      <div class="divider"></div>
+      <button class="btn btn-outline mt-8" onclick="openAddUserModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span id="label-toevoegen">Medewerker toevoegen</span>
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title" id="label-werven">Werven beheren</div>
+      <div id="admin-sites-list"></div>
+      <div class="divider"></div>
+      <button class="btn btn-outline mt-8" onclick="openAddSiteModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span id="label-werftoevoegen">Werf toevoegen</span>
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Google Sheets Setup</div>
+      <div class="form-group">
+        <label class="form-label">Spreadsheet ID</label>
+        <input type="text" class="form-input" id="admin-sheet-id" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Apps Script Web App URL</label>
+        <input type="text" class="form-input" id="admin-script-url" placeholder="https://script.google.com/macros/s/...">
+      </div>
+      <button class="btn btn-primary" onclick="saveSheetConfig()">
+        <span id="label-opslaan">Opslaan</span>
+      </button>
+      <p class="text-sm text-muted mt-12" id="sheets-help-text">Zie de installatiegids hieronder voor configuratie van Google Sheets.</p>
+      <div class="divider"></div>
+      <button class="btn btn-gray" onclick="showSheetsGuide()">
+        📋 <span id="label-gids">Google Sheets installatiegids bekijken</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BOTTOM NAV ===== -->
+<nav class="bottom-nav" id="main-nav" style="display:none;">
+  <button class="nav-btn active" id="nav-home" onclick="showScreen('home','nav-home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span id="nav-label-home">Dashboard</span>
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="showScreen('history','nav-history')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span id="nav-label-history">Geschiedenis</span>
+  </button>
+  <button class="nav-btn" id="nav-admin" onclick="showScreen('admin','nav-admin')" style="display:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+    <span id="nav-label-admin">Beheer</span>
+  </button>
+</nav>
+
+<!-- ===== MODAL: Werfbezoek ===== -->
+<div class="modal-overlay" id="modal-werf">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="modal-werf-title">Werfbezoek starten</h3>
+    <div class="form-group">
+      <label class="form-label" id="label-werf">Werf</label>
+      <select class="form-select" id="werf-select"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="label-type-bezoek">Type bezoek</label>
+      <div class="visit-type-grid" id="visit-type-grid"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="label-opmerkingen">Opmerkingen</label>
+      <textarea class="form-textarea" id="werf-opmerkingen" placeholder="Optionele opmerkingen..."></textarea>
+    </div>
+    <p class="text-sm text-muted" id="gps-hint" style="margin-bottom:12px;">📍 Tijd en GPS-locatie worden vastgelegd op het moment dat je aankomt.</p>
+    <div class="gap-8">
+      <button class="btn btn-primary" onclick="startWerfbezoek()" id="btn-save-werf">Aankomst registreren</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-werf')">Annuleren</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Add User ===== -->
+<div class="modal-overlay" id="modal-add-user">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="modal-user-title">Medewerker toevoegen</h3>
+    <div class="form-group">
+      <label class="form-label">Volledige naam</label>
+      <input type="text" class="form-input" id="new-user-name" placeholder="Voornaam Achternaam">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Gebruikersnaam</label>
+      <input type="text" class="form-input" id="new-user-login" placeholder="voornaam.achternaam">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Wachtwoord</label>
+      <input type="password" class="form-input" id="new-user-pass" placeholder="Minimaal 6 tekens">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rol</label>
+      <select class="form-select" id="new-user-role">
+        <option value="werknemer">Werknemer</option>
+        <option value="werfleider">Werfleider</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="gap-8">
+      <button class="btn btn-primary" onclick="saveNewUser()">Toevoegen</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-add-user')">Annuleren</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Add Site ===== -->
+<div class="modal-overlay" id="modal-add-site">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Werf toevoegen</h3>
+    <div class="form-group">
+      <label class="form-label">Naam werf</label>
+      <input type="text" class="form-input" id="new-site-name" placeholder="bijv. Tennet Substatie Hasselt-Noord">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Locatie / Adres</label>
+      <input type="text" class="form-input" id="new-site-location" placeholder="Straat, Gemeente">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Opdrachtgever</label>
+      <input type="text" class="form-input" id="new-site-client" placeholder="bijv. Tennet TSO">
+    </div>
+    <div class="gap-8">
+      <button class="btn btn-primary" onclick="saveNewSite()">Toevoegen</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-add-site')">Annuleren</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Google Sheets Guide ===== -->
+<div class="modal-overlay" id="modal-sheets-guide">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>📋 Google Sheets Installatiegids</h3>
+    <div style="font-size:14px;line-height:1.7;color:var(--gray-700);">
+      <p style="margin-bottom:12px;"><strong>Stap 1: Google Sheet aanmaken</strong><br>
+      Maak één nieuw, leeg Google Spreadsheet aan op <a href="https://sheets.google.com" target="_blank" style="color:var(--brand);">sheets.google.com</a>. De tabbladen <em>Medewerkers</em>, <em>Werven</em> en <em>Registraties</em> worden bij de eerste sync automatisch aangemaakt — je hoeft zelf niets in te vullen.</p>
+      
+      <p style="margin-bottom:12px;"><strong>Stap 2: Apps Script openen</strong><br>
+      In het spreadsheet: Extensies → Apps Script. Vervang alle code door het script hieronder.</p>
+      
+      <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:12px;font-family:monospace;font-size:11px;white-space:pre-wrap;color:var(--gray-700);margin-bottom:12px;overflow-x:auto;">/****************************************************************
+ * Verbraeken Werf Registratie — CENTRALE BACKEND (Google Apps Script)
+ * ---------------------------------------------------------------
+ * Plak deze volledige code in:  Extensies -&gt; Apps Script
+ * (vervang ALLE bestaande code), klik op Implementeren -&gt;
+ * Nieuwe implementatie -&gt; type &quot;Web-app&quot;, uitvoeren als &quot;Ik&quot;,
+ * toegang &quot;Iedereen&quot;. Kopieer de /exec-URL naar de app
+ * (Beheer -&gt; Google Sheets Setup -&gt; Apps Script URL).
+ *
+ * De drie tabbladen (Medewerkers, Werven, Registraties) worden
+ * automatisch aangemaakt. Bij de eerste keer wordt een
+ * standaard-admin aangemaakt:  login: admin   wachtwoord: admin123
+ * (wijzig dit nadien via Beheer of rechtstreeks in het tabblad).
+ ****************************************************************/
+
+var SHEETS = { users: &#x27;Medewerkers&#x27;, sites: &#x27;Werven&#x27;, records: &#x27;Registraties&#x27; };
+
+var HEADERS = {
+  users:   [&#x27;id&#x27;, &#x27;name&#x27;, &#x27;login&#x27;, &#x27;pass&#x27;, &#x27;role&#x27;],
+  sites:   [&#x27;id&#x27;, &#x27;name&#x27;, &#x27;location&#x27;, &#x27;client&#x27;],
+  records: [&#x27;id&#x27;, &#x27;datum&#x27;, &#x27;tijd&#x27;, &#x27;vertrek_tijd&#x27;, &#x27;duur&#x27;, &#x27;gebruikerId&#x27;, &#x27;gebruiker&#x27;, &#x27;type&#x27;,
+            &#x27;werf&#x27;, &#x27;bezoektype&#x27;, &#x27;bezoektypeLabel&#x27;,
+            &#x27;gps_lat&#x27;, &#x27;gps_lon&#x27;, &#x27;gps_vertrek_lat&#x27;, &#x27;gps_vertrek_lon&#x27;, &#x27;opmerkingen&#x27;]
+};
+
+function sheet_(name, headers) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(name) || ss.insertSheet(name);
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(headers);
+    sh.getRange(1, 1, 1, headers.length).setFontWeight(&#x27;bold&#x27;);
+    sh.setFrozenRows(1);
+  } else {
+    // Migratie: ontbrekende kolommen (zoals &#x27;duur&#x27;) achteraan toevoegen
+    var existing = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+    var missing = headers.filter(function (h) { return existing.indexOf(h) === -1; });
+    if (missing.length) {
+      sh.getRange(1, existing.length + 1, 1, missing.length).setValues([missing]);
+      sh.getRange(1, 1, 1, existing.length + missing.length).setFontWeight(&#x27;bold&#x27;);
+    }
+  }
+  return sh;
+}
+
+// Schrijf een rij weg op basis van de kolomnamen in de header (volgorde-onafhankelijk)
+function appendByHeader_(sh, obj) {
+  var head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  var row = head.map(function (h) { return (obj[h] !== undefined &amp;&amp; obj[h] !== null) ? obj[h] : &#x27;&#x27;; });
+  sh.appendRow(row);
+}
+
+function readAll_(sh) {
+  var values = sh.getDataRange().getValues();
+  if (values.length &lt; 2) return [];
+  var head = values[0];
+  var out = [];
+  for (var i = 1; i &lt; values.length; i++) {
+    var o = {};
+    for (var c = 0; c &lt; head.length; c++) o[head[c]] = values[i][c];
+    out.push(o);
+  }
+  return out;
+}
+
+function getUsers_() {
+  var sh = sheet_(SHEETS.users, HEADERS.users);
+  if (sh.getLastRow() === 1) {
+    sh.appendRow([1, &#x27;Admin Verbraeken&#x27;, &#x27;admin&#x27;, &#x27;admin123&#x27;, &#x27;admin&#x27;]);
+  }
+  return readAll_(sh).map(function (u) { u.id = Number(u.id); return u; });
+}
+
+function getSites_() {
+  var sh = sheet_(SHEETS.sites, HEADERS.sites);
+  return readAll_(sh).map(function (s) { s.id = Number(s.id); return s; });
+}
+
+function getRecords_() {
+  var sh = sheet_(SHEETS.records, HEADERS.records);
+  return readAll_(sh).map(function (r) {
+    r.id = Number(r.id);
+    r.gebruikerId = Number(r.gebruikerId);
+    r.duur = Number(r.duur) || 0;
+    r.datum = String(r.datum);
+    r.tijd = String(r.tijd);
+    return r;
+  });
+}
+
+function json_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  var action = (e &amp;&amp; e.parameter &amp;&amp; e.parameter.action) || &#x27;getAll&#x27;;
+  if (action === &#x27;getAll&#x27;) {
+    return json_({ ok: true, users: getUsers_(), sites: getSites_(), records: getRecords_() });
+  }
+  return json_({ ok: true });
+}
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var d = JSON.parse(e.postData.contents);
+    var a = d.action;
+
+    if (a === &#x27;addRecord&#x27;) {
+      var r = d.record || {};
+      var rs = sheet_(SHEETS.records, HEADERS.records);
+      if (!idExists_(rs, r.id)) appendByHeader_(rs, r);
+
+    } else if (a === &#x27;addUser&#x27;) {
+      var u = d.user || {};
+      getUsers_(); // zorgt dat sheet + standaard-admin bestaan
+      var us = sheet_(SHEETS.users, HEADERS.users);
+      if (!idExists_(us, u.id)) appendByHeader_(us, u);
+
+    } else if (a === &#x27;deleteUser&#x27;) {
+      deleteById_(SHEETS.users, d.id);
+
+    } else if (a === &#x27;addSite&#x27;) {
+      var s = d.site || {};
+      var ss2 = sheet_(SHEETS.sites, HEADERS.sites);
+      if (!idExists_(ss2, s.id)) appendByHeader_(ss2, s);
+
+    } else if (a === &#x27;deleteSite&#x27;) {
+      deleteById_(SHEETS.sites, d.id);
+    }
+
+    return json_({ ok: true });
+  } catch (err) {
+    return json_({ ok: false, error: String(err) });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function deleteById_(name, id) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(name);
+  if (!sh) return;
+  var values = sh.getDataRange().getValues();
+  for (var i = values.length - 1; i &gt;= 1; i--) {
+    if (Number(values[i][0]) === Number(id)) sh.deleteRow(i + 1);
+  }
+}
+
+function idExists_(sh, id) {
+  if (sh.getLastRow() &lt; 2) return false;
+  var ids = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+  for (var i = 0; i &lt; ids.length; i++) {
+    if (Number(ids[i][0]) === Number(id)) return true;
+  }
+  return false;
+}</div>
+      
+      <p style="margin-bottom:12px;"><strong>Stap 3: Implementeren als web-app</strong><br>
+      Klik op "Implementeren" → "Nieuwe implementatie". Type: Web-app. Uitvoeren als: Ik (jouw Google account). Toegang: Iedereen. Klik "Implementeren" en kopieer de URL.</p>
+      
+      <p style="margin-bottom:12px;"><strong>Stap 4: Configureren in de app</strong><br>
+      Ga naar Beheer → Google Sheets Setup. Plak de Apps Script URL (de Spreadsheet ID is optioneel). Klik Opslaan — de app haalt meteen de centrale gegevens op.</p>
+      
+      <p style="color:var(--success);font-size:13px;">✓ Vanaf nu delen alle toestellen dezelfde medewerkers, werven en registraties. Wijzigingen worden in twee richtingen gesynchroniseerd; zonder verbinding gemaakte registraties worden automatisch nagestuurd.</p>
+      <p style="font-size:12px;color:var(--gray-500);margin-top:8px;">Standaard-admin bij eerste gebruik: <strong>admin</strong> / <strong>admin123</strong> — wijzig dit nadien. Beheer medewerkers en werven vanaf één toestel; ze verschijnen dan op alle andere.</p>
+    </div>
+    <div class="mt-12">
+      <button class="btn btn-primary" onclick="closeModal('modal-sheets-guide')">Begrepen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DATA STORE
+// ============================================================
+const DB = {
+  get(key, def) { try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e) { return def; } },
+  set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+};
+
+// Default users — admin + voorbeeldmedewerker
+function initDB() {
+  if (!DB.get('users')) {
+    DB.set('users', [
+      { id:1, name:'Admin Verbraeken', login:'admin', pass:'admin123', role:'admin' },
+      { id:2, name:'Jan Peeters', login:'jan.peeters', pass:'werf2024', role:'werfleider' }
+    ]);
+  }
+  if (!DB.get('sites')) {
+    DB.set('sites', [
+      { id:1, name:'Tennet Substatie Hasselt-Noord', location:'Hasselt', client:'Tennet TSO' },
+      { id:2, name:'High Voltage Luik-Centrum', location:'Luik', client:'Elia' }
+    ]);
+  }
+  if (!DB.get('records')) DB.set('records', []);
+  if (!DB.get('sheetConfig')) DB.set('sheetConfig', { id:'', url:'' });
+  if (!DB.get('pending')) DB.set('pending', []);
+}
+
+// ============================================================
+// CENTRALE OPSLAG — Google Apps Script backend
+// De Sheet is de bron van waarheid; localStorage is cache + offline-wachtrij.
+// ============================================================
+const API = {
+  url() { return ((DB.get('sheetConfig') || {}).url || '').trim(); },
+  configured() { return !!this.url(); },
+  // GET = lezen (geen gevoelige data in de URL)
+  async getAll() {
+    const u = this.url();
+    const sep = u.includes('?') ? '&' : '?';
+    const res = await fetch(`${u}${sep}action=getAll&t=${Date.now()}`, { method: 'GET' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  },
+  // POST met text/plain = "simple request", geen CORS-preflight, antwoord leesbaar
+  async post(action, payload) {
+    const res = await fetch(this.url(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action }, payload))
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  }
+};
+
+// Haal alle gedeelde gegevens op en vul de lokale cache.
+// Overschrijft de medewerkerslijst NOOIT met een lege lijst (anti-uitsluiting).
+async function pullData() {
+  if (!API.configured()) { setSyncState('local'); return false; }
+  setSyncState('syncing');
+  try {
+    await flushPending();
+    const data = await API.getAll();
+    if (data && data.ok) {
+      if (Array.isArray(data.users) && data.users.length) DB.set('users', data.users);
+      if (Array.isArray(data.sites)) DB.set('sites', data.sites);
+      if (Array.isArray(data.records)) DB.set('records', data.records);
+      setSyncState('connected');
+      return true;
+    }
+    setSyncState('error');
+    return false;
+  } catch (e) {
+    setSyncState('offline');
+    return false;
+  }
+}
+
+// Probeer wachtrij met offline-gemaakte registraties na te sturen.
+async function flushPending() {
+  if (!API.configured()) return;
+  let queue = DB.get('pending') || [];
+  if (!queue.length) return;
+  const rest = [];
+  for (const item of queue) {
+    try { await API.post(item.action, item.payload); }
+    catch (e) { rest.push(item); }
+  }
+  DB.set('pending', rest);
+}
+
+// Stuur een wijziging naar de backend; bij mislukking in de wachtrij.
+async function pushChange(action, payload) {
+  if (!API.configured()) return false;
+  try {
+    setSyncState('syncing');
+    await API.post(action, payload);
+    setSyncState('connected');
+    return true;
+  } catch (e) {
+    const q = DB.get('pending') || [];
+    q.push({ action, payload, ts: Date.now() });
+    DB.set('pending', q);
+    setSyncState('offline');
+    return false;
+  }
+}
+
+// ============================================================
+// TRANSLATIONS
+// ============================================================
+let currentLang = DB.get('lang') || 'nl';
+let currentUser = null;
+let selectedVisitType = null;
+let vertrekTime = null;
+
+const T = {
+  nl: {
+    loginSubtitle: 'Werf Registratie Systeem',
+    loginTitle: 'Inloggen',
+    labelUsername: 'Gebruikersnaam',
+    labelPassword: 'Wachtwoord',
+    btnLogin: 'Inloggen',
+    loginContact: 'Neem contact op met de admin voor een account.',
+    loginError: 'Onjuiste gebruikersnaam of wachtwoord.',
+    greeting: (h) => h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond',
+    labelVertrek: 'Vertrek', labelWerkuren: 'Werkuren', labelBezoeken: 'Bezoeken',
+    labelActies: 'Acties',
+    btnVertrek: 'Vertrek registreren', btnAankomst: 'Thuiskomst',
+    btnWerf: 'Werfbezoek registreren',
+    labelLogVandaag: 'Log vandaag',
+    labelGeschiedenis: 'Geschiedenis',
+    labelBeheer: 'Beheer',
+    navHome: 'Dashboard', navHistory: 'Geschiedenis', navAdmin: 'Beheer',
+    modalWerfTitle: 'Werfbezoek registreren',
+    labelWerf: 'Werf', labelTypeBezoek: 'Type bezoek',
+    labelDuur: 'Duurtijd op de werf',
+    labelOpmerkingen: 'Opmerkingen', btnSaveWerf: 'Opslaan', btnCancel: 'Annuleren',
+    labelMedewerkers: 'Medewerkers',
+    labelToevoegen: 'Medewerker toevoegen',
+    labelWerven: 'Werven beheren',
+    labelWerfToevoegen: 'Werf toevoegen',
+    labelOpslaan: 'Opslaan',
+    labelGids: 'Google Sheets installatiegids bekijken',
+    sheetsHelp: 'Zie de installatiegids hieronder voor configuratie van Google Sheets.',
+    modalUserTitle: 'Medewerker toevoegen',
+    btnExport: '⬇ CSV',
+    toastVertrek: 'Vertrek geregistreerd',
+    toastAankomst: 'Thuiskomst geregistreerd',
+    toastWerf: 'Werfbezoek geregistreerd',
+    toastDuurMissing: 'Geef de duurtijd op',
+    toastSaved: 'Opgeslagen',
+    toastUserAdded: 'Medewerker toegevoegd',
+    toastSiteAdded: 'Werf toegevoegd',
+    noRecords: 'Geen registraties beschikbaar.',
+    btnWerfStart: 'Werfbezoek starten',
+    labelActiefBezoek: 'Actief werfbezoek', labelActiefAankomst: 'Aankomst', labelActiefElapsed: 'Tijd op werf',
+    btnWerfVerlaten: 'Werf verlaten', btnWerfAnnuleren: 'Bezoek annuleren',
+    gpsBezig: 'Locatie ophalen...', gpsVastgelegd: 'GPS vastgelegd', gpsGeen: 'Geen GPS-locatie',
+    toastAlActief: 'Er loopt al een werfbezoek',
+    toastAankomstWerf: 'Aankomst geregistreerd 📍', toastAankomstGeenGps: 'Aankomst geregistreerd (zonder GPS)',
+    confirmAnnuleer: 'Dit werfbezoek annuleren? Er wordt niets bewaard.',
+    sheets: { notConfigured: 'Lokaal (geen centrale opslag)', connected: 'Gesynchroniseerd', syncing: 'Synchroniseren...', offline: 'Offline — wordt later verstuurd', error: 'Verbindingsfout', queued: 'in wachtrij' }
+  },
+  fr: {
+    loginSubtitle: 'Système d\'enregistrement de chantier',
+    loginTitle: 'Se connecter',
+    labelUsername: 'Nom d\'utilisateur',
+    labelPassword: 'Mot de passe',
+    btnLogin: 'Se connecter',
+    loginContact: 'Contactez l\'admin pour créer un compte.',
+    loginError: 'Nom d\'utilisateur ou mot de passe incorrect.',
+    greeting: (h) => h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir',
+    labelVertrek: 'Départ', labelWerkuren: 'Heures', labelBezoeken: 'Visites',
+    labelActies: 'Actions',
+    btnVertrek: 'Enregistrer le départ', btnAankomst: 'Retour à la maison',
+    btnWerf: 'Enregistrer visite de chantier',
+    labelLogVandaag: 'Journal du jour',
+    labelGeschiedenis: 'Historique',
+    labelBeheer: 'Administration',
+    navHome: 'Tableau de bord', navHistory: 'Historique', navAdmin: 'Admin',
+    modalWerfTitle: 'Enregistrer une visite de chantier',
+    labelWerf: 'Chantier', labelTypeBezoek: 'Type de visite',
+    labelDuur: 'Durée sur le chantier',
+    labelOpmerkingen: 'Remarques', btnSaveWerf: 'Enregistrer', btnCancel: 'Annuler',
+    labelMedewerkers: 'Employés',
+    labelToevoegen: 'Ajouter un employé',
+    labelWerven: 'Gérer les chantiers',
+    labelWerfToevoegen: 'Ajouter un chantier',
+    labelOpslaan: 'Enregistrer',
+    labelGids: 'Voir le guide d\'installation Google Sheets',
+    sheetsHelp: 'Voir le guide d\'installation ci-dessous.',
+    modalUserTitle: 'Ajouter un employé',
+    btnExport: '⬇ CSV',
+    toastVertrek: 'Départ enregistré',
+    toastAankomst: 'Retour enregistré',
+    toastWerf: 'Visite de chantier enregistrée',
+    toastDuurMissing: 'Indiquez la durée',
+    toastSaved: 'Enregistré',
+    toastUserAdded: 'Employé ajouté',
+    toastSiteAdded: 'Chantier ajouté',
+    noRecords: 'Aucun enregistrement disponible.',
+    btnWerfStart: 'Démarrer une visite',
+    labelActiefBezoek: 'Visite en cours', labelActiefAankomst: 'Arrivée', labelActiefElapsed: 'Temps sur place',
+    btnWerfVerlaten: 'Quitter le chantier', btnWerfAnnuleren: 'Annuler la visite',
+    gpsBezig: 'Localisation...', gpsVastgelegd: 'GPS enregistré', gpsGeen: 'Pas de position GPS',
+    toastAlActief: 'Une visite est déjà en cours',
+    toastAankomstWerf: 'Arrivée enregistrée 📍', toastAankomstGeenGps: 'Arrivée enregistrée (sans GPS)',
+    confirmAnnuleer: 'Annuler cette visite ? Rien ne sera enregistré.',
+    sheets: { notConfigured: 'Local (pas de stockage central)', connected: 'Synchronisé', syncing: 'Synchronisation...', offline: 'Hors ligne — envoi différé', error: 'Erreur de connexion', queued: 'en attente' }
+  },
+  de: {
+    loginSubtitle: 'Baustellen-Erfassungssystem',
+    loginTitle: 'Anmelden',
+    labelUsername: 'Benutzername',
+    labelPassword: 'Passwort',
+    btnLogin: 'Anmelden',
+    loginContact: 'Wenden Sie sich an den Admin für ein Konto.',
+    loginError: 'Falscher Benutzername oder Passwort.',
+    greeting: (h) => h<12?'Guten Morgen':h<18?'Guten Tag':'Guten Abend',
+    labelVertrek: 'Abfahrt', labelWerkuren: 'Arbeitsstunden', labelBezoeken: 'Besuche',
+    labelActies: 'Aktionen',
+    btnVertrek: 'Abfahrt erfassen', btnAankomst: 'Heimkunft erfassen',
+    btnWerf: 'Baustellenbesuch erfassen',
+    labelLogVandaag: 'Heutiges Protokoll',
+    labelGeschiedenis: 'Verlauf',
+    labelBeheer: 'Verwaltung',
+    navHome: 'Dashboard', navHistory: 'Verlauf', navAdmin: 'Verwaltung',
+    modalWerfTitle: 'Baustellenbesuch erfassen',
+    labelWerf: 'Baustelle', labelTypeBezoek: 'Besuchstyp',
+    labelDuur: 'Dauer auf der Baustelle',
+    labelOpmerkingen: 'Bemerkungen', btnSaveWerf: 'Speichern', btnCancel: 'Abbrechen',
+    labelMedewerkers: 'Mitarbeiter',
+    labelToevoegen: 'Mitarbeiter hinzufügen',
+    labelWerven: 'Baustellen verwalten',
+    labelWerfToevoegen: 'Baustelle hinzufügen',
+    labelOpslaan: 'Speichern',
+    labelGids: 'Google Sheets Installationsanleitung anzeigen',
+    sheetsHelp: 'Siehe Installationsanleitung unten.',
+    modalUserTitle: 'Mitarbeiter hinzufügen',
+    btnExport: '⬇ CSV',
+    toastVertrek: 'Abfahrt erfasst',
+    toastAankomst: 'Heimkunft erfasst',
+    toastWerf: 'Baustellenbesuch erfasst',
+    toastDuurMissing: 'Bitte Dauer angeben',
+    toastSaved: 'Gespeichert',
+    toastUserAdded: 'Mitarbeiter hinzugefügt',
+    toastSiteAdded: 'Baustelle hinzugefügt',
+    noRecords: 'Keine Einträge verfügbar.',
+    btnWerfStart: 'Besuch starten',
+    labelActiefBezoek: 'Aktiver Besuch', labelActiefAankomst: 'Ankunft', labelActiefElapsed: 'Zeit vor Ort',
+    btnWerfVerlaten: 'Baustelle verlassen', btnWerfAnnuleren: 'Besuch abbrechen',
+    gpsBezig: 'Standort wird ermittelt...', gpsVastgelegd: 'GPS erfasst', gpsGeen: 'Keine GPS-Position',
+    toastAlActief: 'Ein Besuch läuft bereits',
+    toastAankomstWerf: 'Ankunft erfasst 📍', toastAankomstGeenGps: 'Ankunft erfasst (ohne GPS)',
+    confirmAnnuleer: 'Diesen Besuch abbrechen? Es wird nichts gespeichert.',
+    sheets: { notConfigured: 'Lokal (kein zentraler Speicher)', connected: 'Synchronisiert', syncing: 'Synchronisierung...', offline: 'Offline — wird später gesendet', error: 'Verbindungsfehler', queued: 'in Warteschlange' }
+  }
+};
+
+const VISIT_TYPES = [
+  { id:'voorbereiding', icon:'🗂️', nl:'Voorbereiding werf', fr:'Préparation chantier', de:'Baustellenvorbereitung', sub:{ nl:'Eerste bezoek & planning', fr:'Première visite & planification', de:'Erster Besuch & Planung' } },
+  { id:'absteckung', icon:'📍', nl:'Absteckung (GPS)', fr:'Absteckung (GPS)', de:'Absteckung (GPS)', sub:{ nl:'Uitmeten met GPS coördinaten', fr:'Mesure avec coordonnées GPS', de:'GPS-Koordinaten abstecken' }, gps:true },
+  { id:'platform-opbouw', icon:'🏗️', nl:'Platform opbouw', fr:'Construction plateforme', de:'Plattformaufbau', sub:{ nl:'Opbouw van het werkplatform', fr:'Construction de la plateforme', de:'Aufbau der Arbeitsplattform' } },
+  { id:'voortgang', icon:'📊', nl:'Voortgang controle', fr:'Contrôle avancement', de:'Fortschrittskontrolle', sub:{ nl:'Algemene voortgang werf', fr:'Avancement général du chantier', de:'Allgemeiner Baufortschritt' } },
+  { id:'veiligheid', icon:'🦺', nl:'Veiligheid & PBM', fr:'Sécurité & EPI', de:'Sicherheit & PSA', sub:{ nl:'Controle veiligheid & persoonlijke beschermingsmiddelen', fr:'Contrôle sécurité & équipements de protection', de:'Sicherheitskontrolle & persönliche Schutzausrüstung' } },
+  { id:'boorploeg', icon:'⚙️', nl:'Boorploeg activiteiten', fr:'Équipe de forage', de:'Bohrteam-Aktivitäten', sub:{ nl:'Opvolging boorwerkzaamheden', fr:'Suivi des travaux de forage', de:'Überwachung der Bohrarbeiten' } },
+  { id:'sanitair-burelen', icon:'🚽', nl:'Sanitair & burelen', fr:'Sanitaires & bureaux', de:'Sanitär & Büros', sub:{ nl:'Controle of voorzieningen aanwezig zijn', fr:'Vérification des installations', de:'Kontrolle der Einrichtungen' } },
+  { id:'hekkens', icon:'🚧', nl:'Werfhekkens', fr:'Clôtures de chantier', de:'Bauzäune', sub:{ nl:'Controle werfafscherming en hekkens', fr:'Contrôle des clôtures et barrières', de:'Kontrolle der Bauabsperrung' } },
+  { id:'terugbouw', icon:'🔄', nl:'Terugbouw werf', fr:'Démontage chantier', de:'Rückbau Baustelle', sub:{ nl:'Opvolging afbraak en opruimen', fr:'Suivi du démontage et nettoyage', de:'Abbau und Aufräumen' } },
+  { id:'overgave-tennet', icon:'✅', nl:'Overgave aan Tennet', fr:'Remise à Tennet', de:'Übergabe an Tennet', sub:{ nl:'Finale inspectie en overdracht', fr:'Inspection finale et transfert', de:'Endinspektion und Übergabe' } }
+];
+
+// ============================================================
+// LANGUAGE
+// ============================================================
+function setLang(lang) {
+  currentLang = lang;
+  DB.set('lang', lang);
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[onclick="setLang('${lang}')"]`).classList.add('active');
+  applyLang();
+}
+
+function t(key, ...args) {
+  const val = T[currentLang]?.[key] || T.nl[key];
+  return typeof val === 'function' ? val(...args) : val;
+}
+
+function applyLang() {
+  const l = T[currentLang];
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  set('login-subtitle', l.loginSubtitle);
+  set('login-title', l.loginTitle);
+  set('label-username', l.labelUsername);
+  set('label-password', l.labelPassword);
+  set('btn-login', l.btnLogin);
+  set('login-contact', l.loginContact);
+  set('label-vertrek', l.labelVertrek);
+  set('label-werkuren', l.labelWerkuren);
+  set('label-werfbezoeken', l.labelBezoeken);
+  set('label-acties', l.labelActies);
+  set('label-vertrekbtn', l.btnVertrek);
+  set('label-aankomstbtn', l.btnAankomst);
+  set('label-werfbezoek', l.btnWerfStart);
+  set('label-logvandaag', l.labelLogVandaag);
+  set('label-geschiedenis', l.labelGeschiedenis);
+  set('label-beheer', l.labelBeheer);
+  set('nav-label-home', l.navHome);
+  set('nav-label-history', l.navHistory);
+  set('nav-label-admin', l.navAdmin);
+  set('modal-werf-title', l.modalWerfTitle);
+  set('label-werf', l.labelWerf);
+  set('label-type-bezoek', l.labelTypeBezoek);
+  set('label-opmerkingen', l.labelOpmerkingen);
+  set('label-actief-bezoek', l.labelActiefBezoek);
+  set('label-actief-aankomst', l.labelActiefAankomst);
+  set('label-actief-elapsed', l.labelActiefElapsed);
+  set('label-actief-opmerkingen', l.labelOpmerkingen);
+  set('label-werf-verlaten', l.btnWerfVerlaten);
+  set('btn-werf-annuleren', l.btnWerfAnnuleren);
+  set('btn-save-werf', l.btnSaveWerf);
+  set('label-medewerkers', l.labelMedewerkers);
+  set('label-toevoegen', l.labelToevoegen);
+  set('label-werven', l.labelWerven);
+  set('label-werftoevoegen', l.labelWerfToevoegen);
+  set('label-opslaan', l.labelOpslaan);
+  set('label-gids', l.labelGids);
+  set('sheets-help-text', l.sheetsHelp);
+  set('modal-user-title', l.modalUserTitle);
+  set('btn-export', l.btnExport);
+  updateSheetsStatus();
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('btn-login');
+  // Haal eerst de actuele medewerkerslijst op uit de centrale opslag (indien ingesteld)
+  if (API.configured()) {
+    btn.disabled = true;
+    const prev = btn.textContent;
+    btn.textContent = t('sheets').syncing;
+    await pullData();
+    btn.textContent = prev;
+    btn.disabled = false;
+  }
+  const users = DB.get('users') || [];
+  const user = users.find(u => u.login === username && u.pass === password);
+  if (!user) {
+    errEl.textContent = t('loginError');
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  currentUser = user;
+  DB.set('session', user.id);
+  showMainApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  DB.set('session', null);
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('main-nav').style.display = 'none';
+  showScreen('login');
+}
+
+function restoreSession() {
+  const sid = DB.get('session');
+  if (sid) {
+    const users = DB.get('users') || [];
+    const user = users.find(u => u.id === sid);
+    if (user) { currentUser = user; showMainApp(); return; }
+  }
+  showScreen('login');
+}
+
+function showMainApp() {
+  document.getElementById('main-nav').style.display = 'flex';
+  document.getElementById('nav-admin').style.display = currentUser.role === 'admin' ? 'flex' : 'none';
+  showScreen('home', 'nav-home');
+  updateHomeHeader();
+  updateHomeStatus();
+  loadTodayLog();
+  renderActiveVisit();
+}
+
+// ============================================================
+// SCREENS
+// ============================================================
+function showScreen(name, navId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (navId) document.getElementById(navId)?.classList.add('active');
+  if (name === 'history') renderHistory();
+  if (name === 'admin') renderAdmin();
+}
+
+// ============================================================
+// CLOCK
+// ============================================================
+function updateClock() {
+  const now = new Date();
+  const timeEl = document.getElementById('live-clock');
+  const dateEl = document.getElementById('live-date');
+  if (timeEl) timeEl.textContent = now.toLocaleTimeString('nl-BE', {hour:'2-digit',minute:'2-digit'});
+  if (dateEl) {
+    const days = {nl:['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'],fr:['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'],de:['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag']};
+    dateEl.textContent = `${days[currentLang][now.getDay()]}, ${now.getDate()} ${now.toLocaleDateString('nl-BE',{month:'long'})} ${now.getFullYear()}`;
+  }
+  if (currentUser && DB.get('activeVisit')) tickActiveVisit();
+}
+
+// ============================================================
+// HOME
+// ============================================================
+function updateHomeHeader() {
+  if (!currentUser) return;
+  const h = new Date().getHours();
+  document.getElementById('header-greeting').textContent = t('greeting', h);
+  document.getElementById('header-user').textContent = `${currentUser.name} · ${currentUser.role}`;
+}
+
+function todayKey() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getTodayRecords() {
+  const all = DB.get('records') || [];
+  const today = todayKey();
+  return all.filter(r => r.datum === today && r.gebruikerId === currentUser?.id);
+}
+
+function updateHomeStatus() {
+  if (!currentUser) return;
+  const recs = getTodayRecords();
+  const vRec = recs.find(r => r.type === 'vertrek');
+  const aRec = recs.find(r => r.type === 'aankomst');
+  
+  document.getElementById('status-vertrek').textContent = vRec ? vRec.tijd : '--:--';
+  document.getElementById('status-bezoeken').textContent = recs.filter(r => r.type === 'werf').length;
+  
+  if (vRec) {
+    const [vh, vm] = vRec.tijd.split(':').map(Number);
+    const now = new Date();
+    const mins = (now.getHours() - vh) * 60 + (now.getMinutes() - vm);
+    document.getElementById('status-uren').textContent = `${Math.floor(mins/60)}u ${mins%60}m`;
+    vertrekTime = vRec.tijd;
+    document.getElementById('btn-vertrek').disabled = true;
+    document.getElementById('btn-aankomst').disabled = !!aRec;
+  }
+}
+
+function fmtDuur(min) {
+  min = Number(min) || 0;
+  if (!min) return '';
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? (m ? `${h}u ${m}m` : `${h}u`) : `${m}m`;
+}
+
+function loadTodayLog() {
+  const recs = getTodayRecords().sort((a,b) => a.tijd.localeCompare(b.tijd));
+  const container = document.getElementById('today-log');
+  if (!recs.length) {
+    container.innerHTML = `<p class="text-muted text-sm">Nog geen registraties vandaag.</p>`;
+    return;
+  }
+  container.innerHTML = recs.map(r => {
+    let icon, cls, desc;
+    if (r.type === 'vertrek') { icon = '🚗'; cls = 'vertrek'; desc = { nl:'Vertrek thuis', fr:'Départ domicile', de:'Abfahrt' }[currentLang]; }
+    else if (r.type === 'aankomst') { icon = '🏠'; cls = 'aankomst'; desc = { nl:'Thuiskomst', fr:'Retour maison', de:'Heimkunft' }[currentLang]; }
+    else { icon = '🏗️'; cls = 'werf'; const vt = VISIT_TYPES.find(v => v.id === r.bezoektype); desc = vt ? vt[currentLang] : r.bezoektype; }
+    const duurTxt = (r.type === 'werf' && r.duur) ? ` · ⏱ ${fmtDuur(r.duur)}` : '';
+    return `<div class="log-item">
+      <div class="log-icon ${cls}">${icon}</div>
+      <div class="log-info" style="flex:1;">
+        <div class="time">${r.tijd}${duurTxt}</div>
+        <div class="desc">${desc}${r.werf ? ' — ' + r.werf : ''}</div>
+        ${r.opmerkingen ? `<div class="note">${r.opmerkingen}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// REGISTRATIES
+// ============================================================
+function registreerVertrek() {
+  if (!currentUser) return;
+  const now = new Date();
+  const tijd = now.toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'});
+  const record = { id: Date.now(), gebruikerId: currentUser.id, gebruiker: currentUser.name, datum: todayKey(), tijd, type: 'vertrek' };
+  saveRecord(record);
+  vertrekTime = tijd;
+  document.getElementById('btn-vertrek').disabled = true;
+  document.getElementById('btn-aankomst').disabled = false;
+  document.getElementById('status-vertrek').textContent = tijd;
+  loadTodayLog();
+  showToast(t('toastVertrek'));
+  syncToSheets(record);
+}
+
+function registreerAankomst() {
+  if (!currentUser) return;
+  const now = new Date();
+  const tijd = now.toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'});
+  const record = { id: Date.now(), gebruikerId: currentUser.id, gebruiker: currentUser.name, datum: todayKey(), tijd, type: 'aankomst' };
+  saveRecord(record);
+  document.getElementById('btn-aankomst').disabled = true;
+  loadTodayLog();
+  updateHomeStatus();
+  showToast(t('toastAankomst'));
+  syncToSheets(record);
+}
+
+function saveRecord(record) {
+  const records = DB.get('records') || [];
+  records.push(record);
+  DB.set('records', records);
+}
+
+// ============================================================
+// WERFBEZOEK — start (aankomst) / stop (vertrek) met GPS
+// ============================================================
+function openWerfModal() {
+  if (DB.get('activeVisit')) { showToast(t('toastAlActief')); return; }
+  selectedVisitType = null;
+  document.getElementById('werf-opmerkingen').value = '';
+
+  const sites = DB.get('sites') || [];
+  const sel = document.getElementById('werf-select');
+  sel.innerHTML = sites.map(s => `<option value="${s.name}">${s.name} (${s.location})</option>`).join('');
+
+  const grid = document.getElementById('visit-type-grid');
+  grid.innerHTML = VISIT_TYPES.map(vt => `
+    <button class="visit-type-btn" id="vt-${vt.id}" onclick="selectVisitType('${vt.id}')">
+      <span class="icon">${vt.icon}</span>
+      <div>
+        <div class="label">${vt[currentLang]}</div>
+        <div class="sub">${vt.sub[currentLang]}</div>
+      </div>
+    </button>`).join('');
+
+  openModal('modal-werf');
+}
+
+function selectVisitType(id) {
+  selectedVisitType = id;
+  document.querySelectorAll('.visit-type-btn').forEach(b => { b.style.borderColor = ''; b.style.background = ''; });
+  const btn = document.getElementById('vt-' + id);
+  btn.style.borderColor = 'var(--brand)';
+  btn.style.background = 'var(--brand-light)';
+}
+
+// GPS ophalen als belofte (best effort, blokkeert de registratie niet)
+function getPositionAsync(timeout) {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude.toFixed(6), lon: pos.coords.longitude.toFixed(6) }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: timeout || 12000, maximumAge: 0 }
+    );
+  });
+}
+
+// AANKOMST: legt tijd + GPS vast op dit moment en start een actief bezoek
+async function startWerfbezoek() {
+  if (!selectedVisitType) { showToast('Selecteer een bezoektype'); return; }
+  const btn = document.getElementById('btn-save-werf');
+  const werf = document.getElementById('werf-select').value;
+  const opmerkingen = document.getElementById('werf-opmerkingen').value;
+  const vt = VISIT_TYPES.find(v => v.id === selectedVisitType);
+  const now = new Date();
+
+  btn.disabled = true;
+  const prev = btn.textContent;
+  btn.textContent = '📍 ' + t('gpsBezig');
+  const gps = await getPositionAsync();
+  btn.textContent = prev;
+  btn.disabled = false;
+
+  const visit = {
+    id: Date.now(), gebruikerId: currentUser.id, gebruiker: currentUser.name,
+    datum: todayKey(),
+    werf, bezoektype: selectedVisitType, bezoektypeLabel: vt[currentLang],
+    aankomstTs: now.getTime(),
+    aankomstTijd: now.toLocaleTimeString('nl-BE', { hour:'2-digit', minute:'2-digit' }),
+    gps_lat: gps ? gps.lat : '', gps_lon: gps ? gps.lon : '',
+    opmerkingen
+  };
+  DB.set('activeVisit', visit);
+  closeModal('modal-werf');
+  renderActiveVisit();
+  showToast(gps ? t('toastAankomstWerf') : t('toastAankomstGeenGps'));
+}
+
+// Toon/verberg de actieve-bezoek-kaart op het dashboard
+function renderActiveVisit() {
+  const card = document.getElementById('active-visit-card');
+  const startBtn = document.getElementById('btn-werfbezoek-start');
+  const v = DB.get('activeVisit');
+  if (!card) return;
+  if (!v) {
+    card.style.display = 'none';
+    if (startBtn) startBtn.style.display = '';
+    return;
+  }
+  if (startBtn) startBtn.style.display = 'none';
+  card.style.display = 'block';
+  const vt = VISIT_TYPES.find(x => x.id === v.bezoektype);
+  document.getElementById('active-icon').textContent = vt ? vt.icon : '🏗️';
+  document.getElementById('active-werf').textContent = v.werf;
+  document.getElementById('active-type').textContent = vt ? vt[currentLang] : v.bezoektypeLabel;
+  document.getElementById('active-aankomst').textContent = v.aankomstTijd;
+  document.getElementById('active-gps').textContent = (v.gps_lat)
+    ? `📍 ${t('gpsVastgelegd')}: ${v.gps_lat}, ${v.gps_lon}`
+    : '⚠️ ' + t('gpsGeen');
+  // Opmerkingen alleen vullen als het veld nog niet door de gebruiker is bewerkt
+  const opm = document.getElementById('active-opmerkingen');
+  if (document.activeElement !== opm) opm.value = v.opmerkingen || '';
+  tickActiveVisit();
+}
+
+// Werk alleen de live verstreken tijd bij (elke seconde)
+function tickActiveVisit() {
+  const v = DB.get('activeVisit');
+  const el = document.getElementById('active-elapsed');
+  if (!v || !el) return;
+  const mins = Math.max(0, Math.round((Date.now() - v.aankomstTs) / 60000));
+  el.textContent = fmtDuur(mins) || '0m';
+}
+
+// WERF VERLATEN: legt vertrektijd + GPS vast, berekent duur en bewaart het bezoek
+async function verlaatWerf() {
+  const v = DB.get('activeVisit');
+  if (!v) return;
+  const btn = document.getElementById('btn-werf-verlaten');
+  btn.disabled = true;
+  const prev = btn.querySelector('span') ? btn.querySelector('span').textContent : btn.textContent;
+  if (btn.querySelector('span')) btn.querySelector('span').textContent = '📍 ' + t('gpsBezig');
+  const gps = await getPositionAsync();
+  const now = new Date();
+  const duur = Math.max(1, Math.round((now.getTime() - v.aankomstTs) / 60000));
+  const opmerkingen = document.getElementById('active-opmerkingen').value;
+
+  const record = {
+    id: v.id, gebruikerId: v.gebruikerId, gebruiker: v.gebruiker,
+    datum: v.datum, type: 'werf', werf: v.werf,
+    bezoektype: v.bezoektype, bezoektypeLabel: v.bezoektypeLabel,
+    tijd: v.aankomstTijd,
+    vertrek_tijd: now.toLocaleTimeString('nl-BE', { hour:'2-digit', minute:'2-digit' }),
+    duur,
+    gps_lat: v.gps_lat, gps_lon: v.gps_lon,
+    gps_vertrek_lat: gps ? gps.lat : '', gps_vertrek_lon: gps ? gps.lon : '',
+    opmerkingen
+  };
+  saveRecord(record);
+  DB.set('activeVisit', null);
+  if (btn.querySelector('span')) btn.querySelector('span').textContent = prev;
+  btn.disabled = false;
+  renderActiveVisit();
+  loadTodayLog();
+  updateHomeStatus();
+  showToast(t('toastWerf'));
+  syncToSheets(record);
+}
+
+// Een per ongeluk gestart bezoek annuleren (niets wordt bewaard)
+function annuleerWerf() {
+  if (!DB.get('activeVisit')) return;
+  if (!confirm(t('confirmAnnuleer'))) return;
+  DB.set('activeVisit', null);
+  renderActiveVisit();
+}
+
+// ============================================================
+// HISTORY
+// ============================================================
+function renderHistory() {
+  const all = DB.get('records') || [];
+  const mine = currentUser.role === 'admin' ? all : all.filter(r => r.gebruikerId === currentUser.id);
+  const byDate = {};
+  mine.forEach(r => { if (!byDate[r.datum]) byDate[r.datum] = []; byDate[r.datum].push(r); });
+  const dates = Object.keys(byDate).sort().reverse();
+  
+  if (!dates.length) {
+    document.getElementById('history-content').innerHTML = `<div class="card"><p class="text-muted text-sm">${t('noRecords')}</p></div>`;
+    return;
+  }
+  
+  document.getElementById('history-content').innerHTML = dates.map(date => {
+    const recs = byDate[date].sort((a,b) => a.tijd.localeCompare(b.tijd));
+    const vRec = recs.find(r => r.type === 'vertrek');
+    const aRec = recs.find(r => r.type === 'aankomst');
+    const werfRecs = recs.filter(r => r.type === 'werf');
+    
+    const L = {
+      werf: {nl:'Op werven',fr:'Sur chantiers',de:'Auf Baustellen'}[currentLang],
+      reis: {nl:'Verplaatsing/overig',fr:'Déplacement/autre',de:'Fahrt/Sonstiges'}[currentLang]
+    };
+    const werfMin = werfRecs.reduce((s,r) => s + (Number(r.duur) || 0), 0);
+    let dagMin = null;
+    if (vRec && aRec) {
+      const [vh,vm] = vRec.tijd.split(':').map(Number);
+      const [ah,am] = aRec.tijd.split(':').map(Number);
+      dagMin = (ah-vh)*60+(am-vm);
+    }
+    const reisMin = (dagMin !== null) ? Math.max(0, dagMin - werfMin) : null;
+    
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <strong>${date}</strong>
+        ${dagMin !== null ? `<span class="badge badge-info">${fmtDuur(dagMin)}</span>` : ''}
+      </div>
+      ${(werfMin || reisMin !== null) ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        ${werfMin ? `<span class="badge badge-soft">🏗️ ${L.werf}: ${fmtDuur(werfMin)}</span>` : ''}
+        ${reisMin !== null ? `<span class="badge badge-soft">🚗 ${L.reis}: ${fmtDuur(reisMin)}</span>` : ''}
+      </div>` : ''}
+      ${recs.map(r => {
+        const vt = r.type === 'werf' ? VISIT_TYPES.find(v => v.id === r.bezoektype) : null;
+        const icon = r.type === 'vertrek' ? '🚗' : r.type === 'aankomst' ? '🏠' : (vt?.icon || '🏗️');
+        const label = r.type === 'vertrek' ? {nl:'Vertrek',fr:'Départ',de:'Abfahrt'}[currentLang] :
+                      r.type === 'aankomst' ? {nl:'Thuiskomst',fr:'Retour',de:'Heimkunft'}[currentLang] :
+                      (vt?.[currentLang] || r.bezoektype);
+        return `<div class="log-item">
+          <div style="width:32px;text-align:center;font-size:16px;">${icon}</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;">${r.type === 'werf' && r.vertrek_tijd ? `${r.tijd}–${r.vertrek_tijd}` : r.tijd} — ${label}${r.type === 'werf' && r.duur ? ` · ⏱ ${fmtDuur(r.duur)}` : ''}</div>
+            ${r.werf ? `<div class="text-sm text-muted">${r.werf}</div>` : ''}
+            ${r.gebruiker && currentUser.role==='admin' ? `<div class="text-sm text-muted">${r.gebruiker}</div>` : ''}
+            ${r.opmerkingen ? `<div class="note">${r.opmerkingen}</div>` : ''}
+            ${r.gps_lat ? `<div class="text-sm text-muted">📍 ${{nl:'aankomst',fr:'arrivée',de:'Ankunft'}[currentLang]}: ${r.gps_lat}, ${r.gps_lon}</div>` : ''}
+            ${r.gps_vertrek_lat ? `<div class="text-sm text-muted">📍 ${{nl:'vertrek',fr:'départ',de:'Abfahrt'}[currentLang]}: ${r.gps_vertrek_lat}, ${r.gps_vertrek_lon}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// ADMIN
+// ============================================================
+function renderAdmin() {
+  const users = DB.get('users') || [];
+  document.getElementById('admin-users-list').innerHTML = users.map(u => `
+    <div class="admin-item">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar">${u.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+        <div>
+          <div class="name">${u.name}</div>
+          <div class="role">${u.login} · ${u.role}</div>
+        </div>
+      </div>
+      ${u.id !== currentUser.id ? `<button onclick="deleteUser(${u.id})" style="background:var(--danger-light);color:var(--danger);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;">✕</button>` : ''}
+    </div>`).join('');
+  
+  const sites = DB.get('sites') || [];
+  document.getElementById('admin-sites-list').innerHTML = sites.map(s => `
+    <div class="admin-item">
+      <div>
+        <div class="name">${s.name}</div>
+        <div class="role">${s.location} · ${s.client}</div>
+      </div>
+      <button onclick="deleteSite(${s.id})" style="background:var(--danger-light);color:var(--danger);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;">✕</button>
+    </div>`).join('');
+  
+  const cfg = DB.get('sheetConfig') || {};
+  document.getElementById('admin-sheet-id').value = cfg.id || '';
+  document.getElementById('admin-script-url').value = cfg.url || '';
+}
+
+function openAddUserModal() { openModal('modal-add-user'); }
+function openAddSiteModal() { openModal('modal-add-site'); }
+
+async function saveNewUser() {
+  const name = document.getElementById('new-user-name').value.trim();
+  const login = document.getElementById('new-user-login').value.trim();
+  const pass = document.getElementById('new-user-pass').value;
+  const role = document.getElementById('new-user-role').value;
+  if (!name || !login || !pass) { showToast('Vul alle velden in'); return; }
+  const user = { id: Date.now(), name, login, pass, role };
+  const users = DB.get('users') || [];
+  users.push(user);
+  DB.set('users', users);
+  document.getElementById('new-user-name').value = '';
+  document.getElementById('new-user-login').value = '';
+  document.getElementById('new-user-pass').value = '';
+  closeModal('modal-add-user');
+  renderAdmin();
+  showToast(t('toastUserAdded'));
+  await pushChange('addUser', { user });
+}
+
+async function saveNewSite() {
+  const name = document.getElementById('new-site-name').value.trim();
+  const location = document.getElementById('new-site-location').value.trim();
+  const client = document.getElementById('new-site-client').value.trim();
+  if (!name) { showToast('Geef een werfnaam op'); return; }
+  const site = { id: Date.now(), name, location, client };
+  const sites = DB.get('sites') || [];
+  sites.push(site);
+  DB.set('sites', sites);
+  document.getElementById('new-site-name').value = '';
+  document.getElementById('new-site-location').value = '';
+  document.getElementById('new-site-client').value = '';
+  closeModal('modal-add-site');
+  renderAdmin();
+  showToast(t('toastSiteAdded'));
+  await pushChange('addSite', { site });
+}
+
+async function deleteUser(id) {
+  if (!confirm('Medewerker verwijderen?')) return;
+  DB.set('users', (DB.get('users')||[]).filter(u => u.id !== id));
+  renderAdmin();
+  await pushChange('deleteUser', { id });
+}
+
+async function deleteSite(id) {
+  if (!confirm('Werf verwijderen?')) return;
+  DB.set('sites', (DB.get('sites')||[]).filter(s => s.id !== id));
+  renderAdmin();
+  await pushChange('deleteSite', { id });
+}
+
+async function saveSheetConfig() {
+  const id = document.getElementById('admin-sheet-id').value.trim();
+  const url = document.getElementById('admin-script-url').value.trim();
+  DB.set('sheetConfig', { id, url });
+  showToast(t('toastSaved'));
+  updateSheetsStatus();
+  if (API.configured()) {
+    await pullData();
+    renderAdmin();
+  }
+}
+
+function showSheetsConfig() { showScreen('admin','nav-admin'); }
+function showSheetsGuide() { openModal('modal-sheets-guide'); }
+
+// ============================================================
+// GOOGLE SHEETS SYNC
+// ============================================================
+async function syncToSheets(record) {
+  if (!API.configured()) return;
+  // Stuur de volledige record (incl. gebruikerId) zodat alle toestellen identieke data hebben.
+  await pushChange('addRecord', { record });
+}
+
+function setSyncState(state) {
+  const dot = document.getElementById('sheets-dot');
+  const text = document.getElementById('sheets-status-text');
+  if (!dot || !text) return;
+  const s = t('sheets');
+  const pending = (DB.get('pending') || []).length;
+  const suffix = pending ? ` (${pending} ${s.queued})` : '';
+  const now = () => new Date().toLocaleTimeString('nl-BE', { hour:'2-digit', minute:'2-digit' });
+  dot.classList.remove('connected', 'syncing', 'offline');
+  switch (state) {
+    case 'connected':
+      dot.classList.add('connected');
+      text.textContent = s.connected + ' — ' + now() + suffix; break;
+    case 'syncing':
+      dot.classList.add('syncing');
+      text.textContent = s.syncing + suffix; break;
+    case 'offline':
+      dot.classList.add('offline');
+      text.textContent = s.offline + suffix; break;
+    case 'error':
+      dot.classList.add('offline');
+      text.textContent = s.error + suffix; break;
+    default: // 'local' — geen backend ingesteld
+      text.textContent = s.notConfigured;
+  }
+}
+
+function updateSheetsStatus() {
+  setSyncState(API.configured() ? 'connected' : 'local');
+}
+
+// ============================================================
+// CSV EXPORT
+// ============================================================
+function exportCSV() {
+  const records = DB.get('records') || [];
+  const mine = currentUser.role === 'admin' ? records : records.filter(r => r.gebruikerId === currentUser.id);
+  const rows = [['Datum','Aankomst','Vertrek','Medewerker','Type','Werf','Bezoektype','Duur (min)','GPS Lat (aankomst)','GPS Lon (aankomst)','GPS Lat (vertrek)','GPS Lon (vertrek)','Opmerkingen']];
+  mine.sort((a,b)=>a.datum.localeCompare(b.datum)||(a.tijd.localeCompare(b.tijd)));
+  mine.forEach(r => rows.push([r.datum,r.tijd,r.vertrek_tijd||'',r.gebruiker||'',r.type,r.werf||'',r.bezoektypeLabel||r.bezoektype||'',r.duur||'',r.gps_lat||'',r.gps_lon||'',r.gps_vertrek_lat||'',r.gps_vertrek_lon||'',r.opmerkingen||'']));
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `werf-registratie-${todayKey()}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+// Enter key on login
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-pass').focus(); });
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+initDB();
+setLang(currentLang);
+updateClock();
+setInterval(updateClock, 1000);
+setInterval(() => { if(currentUser) updateHomeStatus(); }, 60000);
+
+(async function boot() {
+  if (API.configured()) {
+    await pullData();
+  } else {
+    setSyncState('local');
+  }
+  restoreSession();
+  // Elke 2 minuten op de achtergrond verversen + offline-wachtrij legen
+  setInterval(() => {
+    if (!API.configured()) return;
+    pullData().then(ok => {
+      if (ok && currentUser) { updateHomeStatus(); loadTodayLog(); }
+    });
+  }, 120000);
+})();
+
+// Service worker: maakt de app installeerbaar en bruikbaar zonder signaal
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('service-worker.js').catch(function () {});
+  });
+}
+</script>
+</body>
+</html>

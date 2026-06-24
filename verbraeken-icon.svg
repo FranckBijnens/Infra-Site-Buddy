@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <clipPath id="roundclip">
+      <rect width="512" height="512" rx="112" ry="112"/>
+    </clipPath>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#1D4E8F"/>
+  <rect x="0" y="360" width="512" height="152" rx="0" fill="#0C2F5A" clip-path="url(#roundclip)"/>
+  <!-- Hard hat -->
+  <ellipse cx="256" cy="210" rx="130" ry="90" fill="#E8501A"/>
+  <rect x="126" y="210" width="260" height="28" rx="14" fill="#C43F12"/>
+  <!-- Brim -->
+  <rect x="96" y="222" width="320" height="20" rx="10" fill="#C43F12"/>
+  <!-- V letter -->
+  <text x="256" y="205" font-family="Arial Black, Arial" font-weight="900" font-size="88" fill="white" text-anchor="middle" dominant-baseline="middle">V</text>
+  <!-- Ground line -->
+  <rect x="80" y="320" width="352" height="8" rx="4" fill="rgba(255,255,255,0.3)"/>
+  <!-- Poles -->
+  <rect x="140" y="270" width="12" height="56" rx="3" fill="rgba(255,255,255,0.5)"/>
+  <rect x="360" y="270" width="12" height="56" rx="3" fill="rgba(255,255,255,0.5)"/>
+  <!-- Text -->
+  <text x="256" y="395" font-family="Arial, sans-serif" font-weight="700" font-size="36" fill="white" text-anchor="middle" letter-spacing="2">VERBRAEKEN</text>
+  <text x="256" y="435" font-family="Arial, sans-serif" font-weight="400" font-size="22" fill="rgba(255,255,255,0.65)" text-anchor="middle" letter-spacing="1">Werf Registratie</text>
+</svg>

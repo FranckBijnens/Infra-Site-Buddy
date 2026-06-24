@@ -1,0 +1,19 @@
+{
+  "name": "Verbraeken Werf Registratie",
+  "short_name": "Verbraeken",
+  "description": "Werf- en werkurenregistratie voor Infra Group Verbraeken",
+  "start_url": "./werf-registratie.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1D4E8F",
+  "theme_color": "#1D4E8F",
+  "lang": "nl",
+  "icons": [
+    {
+      "src": "verbraeken-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
