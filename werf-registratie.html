@@ -484,6 +484,9 @@ body {
       <button class="btn btn-primary" onclick="saveSheetConfig()">
         <span id="label-opslaan">Opslaan</span>
       </button>
+      <button class="btn btn-outline mt-8" onclick="syncNowManual()">
+        🔄 <span id="label-syncnow">Synchroniseer nu &amp; test verbinding</span>
+      </button>
       <p class="text-sm text-muted mt-12" id="sheets-help-text">Zie de installatiegids hieronder voor configuratie van Google Sheets.</p>
       <div class="divider"></div>
       <button class="btn btn-gray" onclick="showSheetsGuide()">
@@ -854,7 +857,7 @@ function idExists_(sh, id) {
 // ============================================================
 // DATA STORE
 // ============================================================
-const APP_VERSION = 'build 1.7';
+const APP_VERSION = 'build 1.8';
 const DB = {
   get(key, def) { try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e) { return def; } },
   set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
@@ -1851,6 +1854,33 @@ async function saveSheetConfig() {
 
 function showSheetsConfig() { showScreen('admin','nav-admin'); }
 function showSheetsGuide() { openModal('modal-sheets-guide'); }
+
+async function syncNowManual() {
+  if (!API.configured()) {
+    alert('Er is nog geen Apps Script URL ingesteld.\n\nVul hierboven de /exec-link in en klik Opslaan.');
+    return;
+  }
+  showToast('Synchroniseren...');
+  const ok = await pullData();
+  if (currentUser) { updateHomeStatus(); loadTodayLog(); }
+  renderAdmin();
+  const recs = (DB.get('records') || []).length;
+  const pend = (DB.get('pending') || []).length;
+  const be = DB.get('backendVersion') || '?';
+  if (ok) {
+    alert('Verbonden met de backend ✓\n\n' +
+          'Backend-versie: ' + be + '\n' +
+          'Registraties op dit toestel: ' + recs + '\n' +
+          'Nog te versturen (wachtrij): ' + pend + '\n\n' +
+          'Ververs nu je Google Sheet (tabblad Registraties) — de gegevens horen daar nu te staan.');
+  } else {
+    alert('Geen verbinding met de backend ✗\n\n' +
+          'Controleer:\n' +
+          '• Staat de juiste /exec-link hierboven ingevuld?\n' +
+          '• Heb je internet/wifi?\n' +
+          '• Is het Apps Script gepubliceerd met toegang "Iedereen"?');
+  }
+}
 
 // ============================================================
 // GOOGLE SHEETS SYNC
