@@ -639,6 +639,7 @@ body {
  * (wijzig dit nadien via Beheer of rechtstreeks in het tabblad).
  ****************************************************************/
 
+var BACKEND_VERSION = &#x27;build 1.6&#x27;;
 var SHEETS = { users: &#x27;Medewerkers&#x27;, sites: &#x27;Werven&#x27;, records: &#x27;Registraties&#x27;, types: &#x27;Bezoektypes&#x27; };
 
 var HEADERS = {
@@ -760,7 +761,7 @@ function json_(obj) {
 function doGet(e) {
   var action = (e &amp;&amp; e.parameter &amp;&amp; e.parameter.action) || &#x27;getAll&#x27;;
   if (action === &#x27;getAll&#x27;) {
-    return json_({ ok: true, users: getUsers_(), sites: getSites_(), types: getTypes_(), records: getRecords_() });
+    return json_({ ok: true, backend: BACKEND_VERSION, users: getUsers_(), sites: getSites_(), types: getTypes_(), records: getRecords_() });
   }
   return json_({ ok: true });
 }
@@ -853,7 +854,7 @@ function idExists_(sh, id) {
 // ============================================================
 // DATA STORE
 // ============================================================
-const APP_VERSION = 'build 1.4';
+const APP_VERSION = 'build 1.6';
 const DB = {
   get(key, def) { try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e) { return def; } },
   set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
@@ -894,15 +895,18 @@ const API = {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return await res.json();
   },
-  // POST met text/plain = "simple request", geen CORS-preflight, antwoord leesbaar
+  // POST zonder het antwoord te lezen (no-cors). Het lezen van Apps Script-antwoorden
+  // mislukt op veel mobiele browsers (terwijl de data wél wordt weggeschreven), wat tot
+  // valse "offline"-meldingen leidde. Bevestiging gebeurt via de volgende getAll-pull,
+  // die lokaal-only registraties zo nodig opnieuw uploadt (backend negeert dubbels).
   async post(action, payload) {
-    const res = await fetch(this.url(), {
+    await fetch(this.url(), {
       method: 'POST',
+      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(Object.assign({ action }, payload))
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return await res.json();
+    return { ok: true };
   }
 };
 
@@ -915,6 +919,7 @@ async function pullData() {
     await flushPending();
     const data = await API.getAll();
     if (data && data.ok) {
+      DB.set('backendVersion', data.backend || '?');
       if (Array.isArray(data.users) && data.users.length) DB.set('users', data.users);
       if (Array.isArray(data.sites)) DB.set('sites', data.sites);
       if (Array.isArray(data.types) && data.types.length) DB.set('visitTypes', data.types);
@@ -952,7 +957,7 @@ async function flushPending() {
   DB.set('pending', rest);
 }
 
-// Stuur een wijziging naar de backend; bij mislukking in de wachtrij.
+// Stuur een wijziging naar de backend; bij een echte netwerkfout in de wachtrij.
 async function pushChange(action, payload) {
   if (!API.configured()) return false;
   try {
@@ -964,7 +969,8 @@ async function pushChange(action, payload) {
     const q = DB.get('pending') || [];
     q.push({ action, payload, ts: Date.now() });
     DB.set('pending', q);
-    setSyncState('offline');
+    // Online maar verzending haperde → 'syncing' (wordt nagestuurd), echt offline → 'offline'
+    setSyncState(navigator.onLine ? 'syncing' : 'offline');
     return false;
   }
 }
@@ -1186,7 +1192,10 @@ function applyLang() {
   const verEl = document.getElementById('app-version');
   if (verEl) verEl.textContent = 'Versie: ' + APP_VERSION;
   const verEl2 = document.getElementById('app-version-admin');
-  if (verEl2) verEl2.textContent = 'Verbraeken Werf Registratie · ' + APP_VERSION;
+  if (verEl2) {
+    const be = DB.get('backendVersion');
+    verEl2.textContent = 'App: ' + APP_VERSION + (be ? ' · Backend: ' + be : ' · Backend: nog niet gesynchroniseerd');
+  }
   set('label-vertrek', l.labelVertrek);
   set('label-werkuren', l.labelWerkuren);
   set('label-werfbezoeken', l.labelBezoeken);
@@ -1335,30 +1344,42 @@ function getTodayRecords() {
   return all.filter(r => r.datum === today && r.gebruikerId === currentUser?.id);
 }
 
+// Totale tijd "weg van huis" op een dag: som van alle vertrek→thuiskomst-periodes.
+// includeOpenNow=true telt een lopende periode mee tot het huidige uur.
+function computeAwayMinutes(moves, includeOpenNow) {
+  const toMin = x => { const p = String(x).split(':'); return (Number(p[0])||0) * 60 + (Number(p[1])||0); };
+  let total = 0, open = null;
+  moves.forEach(r => {
+    if (r.type === 'vertrek') open = toMin(r.tijd);
+    else if (r.type === 'aankomst' && open != null) { total += Math.max(0, toMin(r.tijd) - open); open = null; }
+  });
+  if (open != null && includeOpenNow) {
+    const now = new Date();
+    total += Math.max(0, (now.getHours() * 60 + now.getMinutes()) - open);
+  }
+  return total;
+}
+
 function updateHomeStatus() {
   if (!currentUser) return;
   const recs = getTodayRecords();
-  const vRec = recs.find(r => r.type === 'vertrek');
-  const aRec = recs.find(r => r.type === 'aankomst');
+  const moves = recs.filter(r => r.type === 'vertrek' || r.type === 'aankomst')
+                    .sort((a, b) => String(a.tijd).localeCompare(String(b.tijd)));
+  const last = moves[moves.length - 1];
+  const away = !!last && last.type === 'vertrek';   // momenteel onderweg / op de werf?
+  const firstVertrek = recs.find(r => r.type === 'vertrek');
 
-  document.getElementById('status-vertrek').textContent = vRec ? vRec.tijd : '--:--';
+  document.getElementById('status-vertrek').textContent = firstVertrek ? firstVertrek.tijd : '--:--';
   document.getElementById('status-bezoeken').textContent = recs.filter(r => r.type === 'werf').length;
 
-  if (vRec) {
-    const [vh, vm] = vRec.tijd.split(':').map(Number);
-    const now = new Date();
-    let mins = (now.getHours() - vh) * 60 + (now.getMinutes() - vm);
-    if (mins < 0) mins = 0;
-    document.getElementById('status-uren').textContent = `${Math.floor(mins/60)}u ${mins%60}m`;
-    vertrekTime = vRec.tijd;
-  } else {
-    document.getElementById('status-uren').textContent = '0u 0m';
-    vertrekTime = null;
-  }
+  const mins = computeAwayMinutes(moves, true);
+  document.getElementById('status-uren').textContent = `${Math.floor(mins/60)}u ${mins%60}m`;
+  vertrekTime = firstVertrek ? firstVertrek.tijd : null;
 
-  // Knopstatus ALTIJD afleiden uit de registraties van vandaag (nooit "hangend"):
-  document.getElementById('btn-vertrek').disabled = !!vRec;            // al vertrokken → uit
-  document.getElementById('btn-aankomst').disabled = !vRec || !!aRec;  // aan na vertrek, uit na thuiskomst
+  // Wisselknop: thuis → "Vertrek" aan / "Thuiskomst" uit; weg → omgekeerd.
+  // Zo kun je meerdere keren per dag vertrekken en thuiskomen (bv. middagpauze).
+  document.getElementById('btn-vertrek').disabled = away;
+  document.getElementById('btn-aankomst').disabled = !away;
 }
 
 function fmtDuur(min) {
@@ -1469,14 +1490,15 @@ function selectVisitType(id) {
 }
 
 // GPS ophalen als belofte (best effort, blokkeert de registratie niet)
-function getPositionAsync(timeout) {
+function getPositionAsync() {
   return new Promise(resolve => {
     if (!navigator.geolocation) return resolve(null);
-    navigator.geolocation.getCurrentPosition(
-      pos => resolve({ lat: pos.coords.latitude.toFixed(6), lon: pos.coords.longitude.toFixed(6) }),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: timeout || 20000, maximumAge: 30000 }
-    );
+    const ok = pos => resolve({ lat: pos.coords.latitude.toFixed(6), lon: pos.coords.longitude.toFixed(6) });
+    // 1) nauwkeurig (GPS, 12s) → 2) snelle benadering (wifi/zendmast, 10s) → anders niets
+    navigator.geolocation.getCurrentPosition(ok, () => {
+      navigator.geolocation.getCurrentPosition(ok, () => resolve(null),
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 120000 });
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
   });
 }
 
@@ -1618,18 +1640,15 @@ function renderHistory() {
       reis: {nl:'Verplaatsing/overig',fr:'Déplacement/autre',de:'Fahrt/Sonstiges'}[currentLang]
     };
     const werfMin = werfRecs.reduce((s,r) => s + (Number(r.duur) || 0), 0);
-    let dagMin = null;
-    if (vRec && aRec) {
-      const [vh,vm] = vRec.tijd.split(':').map(Number);
-      const [ah,am] = aRec.tijd.split(':').map(Number);
-      dagMin = (ah-vh)*60+(am-vm);
-    }
-    const reisMin = (dagMin !== null) ? Math.max(0, dagMin - werfMin) : null;
+    const moves = recs.filter(r => r.type === 'vertrek' || r.type === 'aankomst')
+                      .sort((a,b) => String(a.tijd).localeCompare(String(b.tijd)));
+    const dagMin = moves.length ? computeAwayMinutes(moves, false) : null;
+    const reisMin = (dagMin !== null && dagMin > 0) ? Math.max(0, dagMin - werfMin) : null;
     
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <strong>${fmtDateHeader(date)}</strong>
-        ${dagMin !== null ? `<span class="badge badge-info">${fmtDuur(dagMin)}</span>` : ''}
+        ${dagMin ? `<span class="badge badge-info">${fmtDuur(dagMin)}</span>` : ''}
       </div>
       ${(werfMin || reisMin !== null) ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
         ${werfMin ? `<span class="badge badge-soft">🏗️ ${L.werf}: ${fmtDuur(werfMin)}</span>` : ''}
@@ -1700,6 +1719,11 @@ function renderAdmin() {
   const cfg = DB.get('sheetConfig') || {};
   document.getElementById('admin-sheet-id').value = cfg.id || '';
   document.getElementById('admin-script-url').value = cfg.url || '';
+  const vEl = document.getElementById('app-version-admin');
+  if (vEl) {
+    const be = DB.get('backendVersion');
+    vEl.textContent = 'App: ' + APP_VERSION + (be ? ' · Backend: ' + be : ' · Backend: nog niet gesynchroniseerd');
+  }
 }
 
 function openAddUserModal() { openModal('modal-add-user'); }
@@ -1919,13 +1943,19 @@ setInterval(() => { if(currentUser) updateHomeStatus(); }, 60000);
     setSyncState('local');
   }
   restoreSession();
-  // Elke 2 minuten op de achtergrond verversen + offline-wachtrij legen
-  setInterval(() => {
+
+  function syncNow() {
     if (!API.configured()) return;
     pullData().then(ok => {
       if (ok && currentUser) { updateHomeStatus(); loadTodayLog(); }
     });
-  }, 120000);
+  }
+
+  // Elke 45 seconden op de achtergrond verversen + offline-wachtrij legen
+  setInterval(syncNow, 45000);
+  // Synchroniseer ook zodra de app terug op de voorgrond komt of de verbinding terugkeert
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) syncNow(); });
+  window.addEventListener('online', syncNow);
 })();
 
 // Service worker: maakt de app installeerbaar en bruikbaar zonder signaal
