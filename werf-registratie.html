@@ -636,13 +636,26 @@ body {
  * toegang &quot;Iedereen&quot;. Kopieer de /exec-URL naar de app
  * (Beheer -&gt; Google Sheets Setup -&gt; Apps Script URL).
  *
+ * &gt;&gt;&gt; BELANGRIJK: vul hieronder bij SPREADSHEET_ID het ID van je
+ *     Google Sheet in (de lange reeks in de URL tussen /d/ en /edit).
+ *     Zo weet het script altijd zeker met welke Sheet het moet werken.
+ *
  * De tabbladen (Medewerkers, Werven, Bezoektypes, Registraties) worden
  * automatisch aangemaakt. Bij de eerste keer wordt een
  * standaard-admin aangemaakt:  login: admin   wachtwoord: admin123
  * (wijzig dit nadien via Beheer of rechtstreeks in het tabblad).
  ****************************************************************/
 
-var BACKEND_VERSION = &#x27;build 1.6&#x27;;
+// Plak hier het ID van je Google Sheet (tussen de aanhalingstekens).
+// Voorbeeld URL: https://docs.google.com/spreadsheets/d/1AbCdE... /edit  -&gt; ID = 1AbCdE...
+var SPREADSHEET_ID = &#x27;&#x27;;
+
+// Geeft de juiste spreadsheet terug: via ID indien ingevuld, anders de gekoppelde Sheet.
+function ss_() {
+  return SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+}
+
+var BACKEND_VERSION = &#x27;build 1.9&#x27;;
 var SHEETS = { users: &#x27;Medewerkers&#x27;, sites: &#x27;Werven&#x27;, records: &#x27;Registraties&#x27;, types: &#x27;Bezoektypes&#x27; };
 
 var HEADERS = {
@@ -669,7 +682,7 @@ var DEFAULT_TYPES = [
 ];
 
 function sheet_(name, headers) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = ss_();
   var sh = ss.getSheetByName(name) || ss.insertSheet(name);
   if (sh.getLastRow() === 0) {
     sh.appendRow(headers);
@@ -762,11 +775,15 @@ function json_(obj) {
 }
 
 function doGet(e) {
-  var action = (e &amp;&amp; e.parameter &amp;&amp; e.parameter.action) || &#x27;getAll&#x27;;
-  if (action === &#x27;getAll&#x27;) {
-    return json_({ ok: true, backend: BACKEND_VERSION, users: getUsers_(), sites: getSites_(), types: getTypes_(), records: getRecords_() });
+  try {
+    var action = (e &amp;&amp; e.parameter &amp;&amp; e.parameter.action) || &#x27;getAll&#x27;;
+    if (action === &#x27;getAll&#x27;) {
+      return json_({ ok: true, backend: BACKEND_VERSION, users: getUsers_(), sites: getSites_(), types: getTypes_(), records: getRecords_() });
+    }
+    return json_({ ok: true, backend: BACKEND_VERSION });
+  } catch (err) {
+    return json_({ ok: false, backend: BACKEND_VERSION, error: String(err) });
   }
-  return json_({ ok: true });
 }
 
 function doPost(e) {
@@ -817,7 +834,7 @@ function doPost(e) {
 }
 
 function deleteById_(name, id) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = ss_();
   var sh = ss.getSheetByName(name);
   if (!sh) return;
   var values = sh.getDataRange().getValues();
@@ -857,7 +874,7 @@ function idExists_(sh, id) {
 // ============================================================
 // DATA STORE
 // ============================================================
-const APP_VERSION = 'build 1.8';
+const APP_VERSION = 'build 1.9';
 const DB = {
   get(key, def) { try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e) { return def; } },
   set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
@@ -936,12 +953,16 @@ async function pullData() {
         DB.set('records', central.concat(localOnly));
         localOnly.forEach(r => { API.post('addRecord', { record: r }).catch(() => {}); });
       }
+      DB.set('backendError', '');
       setSyncState('connected');
       return true;
     }
+    DB.set('backendError', (data && data.error) ? data.error : '');
+    if (data && data.backend) DB.set('backendVersion', data.backend);
     setSyncState('error');
     return false;
   } catch (e) {
+    DB.set('backendError', String(e && e.message ? e.message : e));
     setSyncState('offline');
     return false;
   }
@@ -1874,11 +1895,14 @@ async function syncNowManual() {
           'Nog te versturen (wachtrij): ' + pend + '\n\n' +
           'Ververs nu je Google Sheet (tabblad Registraties) — de gegevens horen daar nu te staan.');
   } else {
-    alert('Geen verbinding met de backend ✗\n\n' +
+    const err = DB.get('backendError');
+    alert('Geen (volledige) verbinding met de backend ✗\n\n' +
+          (err ? 'Foutmelding van de backend:\n' + err + '\n\n' : '') +
           'Controleer:\n' +
           '• Staat de juiste /exec-link hierboven ingevuld?\n' +
           '• Heb je internet/wifi?\n' +
-          '• Is het Apps Script gepubliceerd met toegang "Iedereen"?');
+          '• Is het Apps Script gepubliceerd met toegang "Iedereen"?\n' +
+          '• Staat in het Apps Script het juiste SPREADSHEET_ID ingevuld?');
   }
 }
 
