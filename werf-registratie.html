@@ -318,6 +318,7 @@ body {
     <div id="login-error" style="color:#B91C1C;font-size:13px;margin-bottom:12px;display:none;"></div>
     <button class="btn btn-primary" onclick="doLogin()" id="btn-login">Inloggen</button>
     <p class="text-center text-sm text-muted mt-12" id="login-contact">Neem contact op met de admin voor een account.</p>
+    <p class="text-center text-muted" style="font-size:11px;margin-top:6px;opacity:0.7;" id="app-version"></p>
   </div>
 </div>
 
@@ -489,6 +490,7 @@ body {
         📋 <span id="label-gids">Google Sheets installatiegids bekijken</span>
       </button>
     </div>
+    <p class="text-center text-muted" style="font-size:11px;opacity:0.7;" id="app-version-admin"></p>
   </div>
 </div>
 
@@ -722,14 +724,30 @@ function getTypes_() {
   return readAll_(sh).map(function (tp) { tp.id = String(tp.id); return tp; });
 }
 
+// Zet een celwaarde om naar &#x27;yyyy-MM-dd&#x27; (Google Sheets maakt er soms een Date van)
+function dateStr_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), &#x27;yyyy-MM-dd&#x27;);
+  return (v === &#x27;&#x27; || v === null || v === undefined) ? &#x27;&#x27; : String(v);
+}
+// Zet een celwaarde om naar &#x27;HH:mm&#x27; (Google Sheets maakt van &quot;08:00&quot; een tijd op 30-12-1899)
+function timeStr_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), &#x27;HH:mm&#x27;);
+  return (v === &#x27;&#x27; || v === null || v === undefined) ? &#x27;&#x27; : String(v);
+}
+
 function getRecords_() {
   var sh = sheet_(SHEETS.records, HEADERS.records);
   return readAll_(sh).map(function (r) {
     r.id = Number(r.id);
     r.gebruikerId = Number(r.gebruikerId);
     r.duur = Number(r.duur) || 0;
-    r.datum = String(r.datum);
-    r.tijd = String(r.tijd);
+    r.datum = dateStr_(r.datum);
+    r.tijd = timeStr_(r.tijd);
+    r.vertrek_tijd = timeStr_(r.vertrek_tijd);
+    r.gps_lat = (r.gps_lat === &#x27;&#x27; || r.gps_lat === null || r.gps_lat === undefined) ? &#x27;&#x27; : String(r.gps_lat);
+    r.gps_lon = (r.gps_lon === &#x27;&#x27; || r.gps_lon === null || r.gps_lon === undefined) ? &#x27;&#x27; : String(r.gps_lon);
+    r.gps_vertrek_lat = (r.gps_vertrek_lat === &#x27;&#x27; || r.gps_vertrek_lat === null || r.gps_vertrek_lat === undefined) ? &#x27;&#x27; : String(r.gps_vertrek_lat);
+    r.gps_vertrek_lon = (r.gps_vertrek_lon === &#x27;&#x27; || r.gps_vertrek_lon === null || r.gps_vertrek_lon === undefined) ? &#x27;&#x27; : String(r.gps_vertrek_lon);
     return r;
   });
 }
@@ -835,6 +853,7 @@ function idExists_(sh, id) {
 // ============================================================
 // DATA STORE
 // ============================================================
+const APP_VERSION = 'build 1.4';
 const DB = {
   get(key, def) { try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e) { return def; } },
   set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
@@ -992,6 +1011,7 @@ const T = {
     toastVertrek: 'Vertrek geregistreerd',
     toastAankomst: 'Thuiskomst geregistreerd',
     toastWerf: 'Werfbezoek geregistreerd',
+    toastVertrekGeenGps: 'Werf verlaten — let op: geen GPS vastgelegd',
     toastDuurMissing: 'Geef de duurtijd op',
     toastSaved: 'Opgeslagen',
     toastUserAdded: 'Medewerker toegevoegd',
@@ -1043,6 +1063,7 @@ const T = {
     toastVertrek: 'Départ enregistré',
     toastAankomst: 'Retour enregistré',
     toastWerf: 'Visite de chantier enregistrée',
+    toastVertrekGeenGps: 'Chantier quitté — sans position GPS',
     toastDuurMissing: 'Indiquez la durée',
     toastSaved: 'Enregistré',
     toastUserAdded: 'Employé ajouté',
@@ -1094,6 +1115,7 @@ const T = {
     toastVertrek: 'Abfahrt erfasst',
     toastAankomst: 'Heimkunft erfasst',
     toastWerf: 'Baustellenbesuch erfasst',
+    toastVertrekGeenGps: 'Baustelle verlassen — ohne GPS',
     toastDuurMissing: 'Bitte Dauer angeben',
     toastSaved: 'Gespeichert',
     toastUserAdded: 'Mitarbeiter hinzugefügt',
@@ -1161,6 +1183,10 @@ function applyLang() {
   set('label-password', l.labelPassword);
   set('btn-login', l.btnLogin);
   set('login-contact', l.loginContact);
+  const verEl = document.getElementById('app-version');
+  if (verEl) verEl.textContent = 'Versie: ' + APP_VERSION;
+  const verEl2 = document.getElementById('app-version-admin');
+  if (verEl2) verEl2.textContent = 'Verbraeken Werf Registratie · ' + APP_VERSION;
   set('label-vertrek', l.labelVertrek);
   set('label-werkuren', l.labelWerkuren);
   set('label-werfbezoeken', l.labelBezoeken);
@@ -1299,7 +1325,8 @@ function updateHomeHeader() {
 }
 
 function todayKey() {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
 }
 
 function getTodayRecords() {
@@ -1339,6 +1366,16 @@ function fmtDuur(min) {
   if (!min) return '';
   const h = Math.floor(min / 60), m = min % 60;
   return h ? (m ? `${h}u ${m}m` : `${h}u`) : `${m}m`;
+}
+
+// Toon 'yyyy-MM-dd' als nette datum (zonder tijdzone), met terugval op de ruwe waarde
+function fmtDateHeader(ymd) {
+  const p = String(ymd).split('-');
+  if (p.length !== 3) return String(ymd);
+  const d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  if (isNaN(d.getTime())) return String(ymd);
+  const loc = currentLang === 'fr' ? 'fr-BE' : currentLang === 'de' ? 'de-DE' : 'nl-BE';
+  return d.toLocaleDateString(loc, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function loadTodayLog() {
@@ -1438,7 +1475,7 @@ function getPositionAsync(timeout) {
     navigator.geolocation.getCurrentPosition(
       pos => resolve({ lat: pos.coords.latitude.toFixed(6), lon: pos.coords.longitude.toFixed(6) }),
       () => resolve(null),
-      { enableHighAccuracy: true, timeout: timeout || 12000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: timeout || 20000, maximumAge: 30000 }
     );
   });
 }
@@ -1541,7 +1578,7 @@ async function verlaatWerf() {
   renderActiveVisit();
   loadTodayLog();
   updateHomeStatus();
-  showToast(t('toastWerf'));
+  showToast(gps ? t('toastWerf') : t('toastVertrekGeenGps'));
   syncToSheets(record);
 }
 
@@ -1571,7 +1608,7 @@ function renderHistory() {
   }
   
   document.getElementById('history-content').innerHTML = dates.map(date => {
-    const recs = byDate[date].sort((a,b) => a.tijd.localeCompare(b.tijd));
+    const recs = byDate[date].sort((a,b) => String(a.tijd).localeCompare(String(b.tijd)));
     const vRec = recs.find(r => r.type === 'vertrek');
     const aRec = recs.find(r => r.type === 'aankomst');
     const werfRecs = recs.filter(r => r.type === 'werf');
@@ -1591,7 +1628,7 @@ function renderHistory() {
     
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <strong>${date}</strong>
+        <strong>${fmtDateHeader(date)}</strong>
         ${dagMin !== null ? `<span class="badge badge-info">${fmtDuur(dagMin)}</span>` : ''}
       </div>
       ${(werfMin || reisMin !== null) ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
