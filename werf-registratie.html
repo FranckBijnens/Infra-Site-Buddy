@@ -854,7 +854,7 @@ function idExists_(sh, id) {
 // ============================================================
 // DATA STORE
 // ============================================================
-const APP_VERSION = 'build 1.6';
+const APP_VERSION = 'build 1.7';
 const DB = {
   get(key, def) { try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e) { return def; } },
   set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
@@ -1029,6 +1029,7 @@ const T = {
     gpsBezig: 'Locatie ophalen...', gpsVastgelegd: 'GPS vastgelegd', gpsGeen: 'Geen GPS-locatie',
     toastAlActief: 'Er loopt al een werfbezoek',
     toastAankomstWerf: 'Aankomst geregistreerd 📍', toastAankomstGeenGps: 'Aankomst geregistreerd (zonder GPS)',
+    gpsDenied: 'locatietoegang geweigerd in de browser', gpsUnavailable: 'locatie staat uit op de telefoon', gpsTimeout: 'locatie duurde te lang', gpsNoSupport: 'geen locatie-ondersteuning',
     confirmAnnuleer: 'Dit werfbezoek annuleren? Er wordt niets bewaard.',
     labelBezoektypes: 'Bezoektypes beheren', labelTypeToevoegen: 'Bezoektype toevoegen',
     labelTypeIcoon: 'Icoon', labelTypeNaam: 'Naam bezoektype',
@@ -1081,6 +1082,7 @@ const T = {
     gpsBezig: 'Localisation...', gpsVastgelegd: 'GPS enregistré', gpsGeen: 'Pas de position GPS',
     toastAlActief: 'Une visite est déjà en cours',
     toastAankomstWerf: 'Arrivée enregistrée 📍', toastAankomstGeenGps: 'Arrivée enregistrée (sans GPS)',
+    gpsDenied: 'accès à la localisation refusé dans le navigateur', gpsUnavailable: 'localisation désactivée sur le téléphone', gpsTimeout: 'localisation trop lente', gpsNoSupport: 'localisation non supportée',
     confirmAnnuleer: 'Annuler cette visite ? Rien ne sera enregistré.',
     labelBezoektypes: 'Gérer les types de visite', labelTypeToevoegen: 'Ajouter un type',
     labelTypeIcoon: 'Icône', labelTypeNaam: 'Nom du type de visite',
@@ -1133,6 +1135,7 @@ const T = {
     gpsBezig: 'Standort wird ermittelt...', gpsVastgelegd: 'GPS erfasst', gpsGeen: 'Keine GPS-Position',
     toastAlActief: 'Ein Besuch läuft bereits',
     toastAankomstWerf: 'Ankunft erfasst 📍', toastAankomstGeenGps: 'Ankunft erfasst (ohne GPS)',
+    gpsDenied: 'Standortzugriff im Browser verweigert', gpsUnavailable: 'Standort am Telefon deaktiviert', gpsTimeout: 'Standort zu langsam', gpsNoSupport: 'kein Standort-Support',
     confirmAnnuleer: 'Diesen Besuch abbrechen? Es wird nichts gespeichert.',
     labelBezoektypes: 'Besuchstypen verwalten', labelTypeToevoegen: 'Besuchstyp hinzufügen',
     labelTypeIcoon: 'Symbol', labelTypeNaam: 'Name des Besuchstyps',
@@ -1490,13 +1493,18 @@ function selectVisitType(id) {
 }
 
 // GPS ophalen als belofte (best effort, blokkeert de registratie niet)
+let gpsErrorReason = '';
+function gpsReasonText(code) {
+  return code === 1 ? t('gpsDenied') : code === 2 ? t('gpsUnavailable') : code === 3 ? t('gpsTimeout') : t('gpsGeen');
+}
 function getPositionAsync() {
   return new Promise(resolve => {
-    if (!navigator.geolocation) return resolve(null);
+    gpsErrorReason = '';
+    if (!navigator.geolocation) { gpsErrorReason = t('gpsNoSupport'); return resolve(null); }
     const ok = pos => resolve({ lat: pos.coords.latitude.toFixed(6), lon: pos.coords.longitude.toFixed(6) });
-    // 1) nauwkeurig (GPS, 12s) → 2) snelle benadering (wifi/zendmast, 10s) → anders niets
+    // 1) nauwkeurig (GPS, 12s) → 2) snelle benadering (wifi/zendmast, 10s) → anders niets (met reden)
     navigator.geolocation.getCurrentPosition(ok, () => {
-      navigator.geolocation.getCurrentPosition(ok, () => resolve(null),
+      navigator.geolocation.getCurrentPosition(ok, err => { gpsErrorReason = gpsReasonText(err.code); resolve(null); },
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 120000 });
     }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
   });
@@ -1530,7 +1538,7 @@ async function startWerfbezoek() {
   DB.set('activeVisit', visit);
   closeModal('modal-werf');
   renderActiveVisit();
-  showToast(gps ? t('toastAankomstWerf') : t('toastAankomstGeenGps'));
+  showToast(gps ? t('toastAankomstWerf') : (t('toastAankomstGeenGps') + (gpsErrorReason ? ' — ' + gpsErrorReason : '')));
 }
 
 // Toon/verberg de actieve-bezoek-kaart op het dashboard
@@ -1600,7 +1608,7 @@ async function verlaatWerf() {
   renderActiveVisit();
   loadTodayLog();
   updateHomeStatus();
-  showToast(gps ? t('toastWerf') : t('toastVertrekGeenGps'));
+  showToast(gps ? t('toastWerf') : (t('toastVertrekGeenGps') + (gpsErrorReason ? ' — ' + gpsErrorReason : '')));
   syncToSheets(record);
 }
 
