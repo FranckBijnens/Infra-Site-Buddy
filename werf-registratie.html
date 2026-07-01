@@ -482,6 +482,22 @@ body {
     </div>
 
     <div class="card">
+      <div class="card-title">🗑️ Geschiedenis wissen</div>
+      <p class="text-sm text-muted mb-8">Verwijdert alle registraties (van alle medewerkers) binnen de gekozen periode. Dit kan niet ongedaan gemaakt worden.</p>
+      <div class="form-group">
+        <label class="form-label">Van</label>
+        <input type="date" class="form-input" id="clear-history-van">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tot</label>
+        <input type="date" class="form-input" id="clear-history-tot">
+      </div>
+      <button class="btn btn-danger" onclick="clearHistoryRange()">
+        🗑️ Geschiedenis wissen
+      </button>
+    </div>
+
+    <div class="card">
       <div class="card-title">Google Sheets Setup</div>
       <div class="form-group">
         <label class="form-label">Spreadsheet ID</label>
@@ -1869,6 +1885,33 @@ async function deleteSite(id) {
   DB.set('sites', (DB.get('sites')||[]).filter(s => s.id !== id));
   renderAdmin();
   await pushChange('deleteSite', { id });
+}
+
+async function clearHistoryRange() {
+  const van = document.getElementById('clear-history-van').value;
+  const tot = document.getElementById('clear-history-tot').value;
+  if (!van || !tot) { showToast('Kies zowel een van- als een tot-datum'); return; }
+  if (van > tot) { showToast('"Van" moet vóór "tot" liggen'); return; }
+
+  const all = DB.get('records') || [];
+  const toDelete = all.filter(r => r.datum >= van && r.datum <= tot);
+  if (!toDelete.length) { showToast('Geen registraties gevonden in die periode'); return; }
+
+  if (!confirm(`${toDelete.length} registratie(s) tussen ${van} en ${tot} definitief verwijderen? Dit kan niet ongedaan gemaakt worden.`)) return;
+
+  // Lokaal meteen verwijderen
+  const ids = toDelete.map(r => String(r.id));
+  DB.set('records', all.filter(r => !ids.includes(String(r.id))));
+  renderAdmin();
+  showToast('Bezig met wissen...');
+
+  // Backend vragen om dezelfde periode/ids te verwijderen zodat het niet terugkomt bij de volgende sync
+  const ok = await pushChange('deleteRecords', { ids, van, tot });
+  if (ok) {
+    showToast('Geschiedenis gewist');
+  } else {
+    showToast('Lokaal gewist, maar de backend kon niet bevestigen — controleer je verbinding en synchroniseer opnieuw');
+  }
 }
 
 async function saveSheetConfig() {
