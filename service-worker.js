@@ -2,15 +2,18 @@
    Maakt de app installeerbaar (PWA) en bruikbaar zonder signaal.
    Bij elke nieuwe versie van de app: verhoog het versienummer hieronder
    (bv. v1 -> v2), zodat de oude cache wordt opgeruimd. */
-const CACHE = 'verbraeken-werf-v10';
+const CACHE = 'verbraeken-werf-v11';
 const SHELL = [
   './',
   './index.html',
   './werf-registratie.html',
   './manifest.json',
   './verbraeken-icon.svg',
+  './infra-group-logo.png',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './icon-192-maskable.png',
+  './icon-512-maskable.png'
 ];
 
 self.addEventListener('install', function (e) {
