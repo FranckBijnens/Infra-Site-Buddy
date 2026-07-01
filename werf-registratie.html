@@ -1437,7 +1437,7 @@ function fmtDateHeader(ymd) {
 }
 
 function loadTodayLog() {
-  const recs = getTodayRecords().sort((a,b) => a.tijd.localeCompare(b.tijd));
+  const recs = getTodayRecords().sort((a,b) => b.tijd.localeCompare(a.tijd));
   const container = document.getElementById('today-log');
   if (!recs.length) {
     container.innerHTML = `<p class="text-muted text-sm">Nog geen registraties vandaag.</p>`;
@@ -1696,7 +1696,7 @@ function renderHistory() {
         ${werfMin ? `<span class="badge badge-soft">🏗️ ${L.werf}: ${fmtDuur(werfMin)}</span>` : ''}
         ${reisMin !== null ? `<span class="badge badge-soft">🚗 ${L.reis}: ${fmtDuur(reisMin)}</span>` : ''}
       </div>` : ''}
-      ${recs.map(r => {
+      ${recs.slice().sort((a,b) => String(b.tijd).localeCompare(String(a.tijd))).map(r => {
         const vt = r.type === 'werf' ? findVisitType(r.bezoektype) : null;
         const icon = r.type === 'vertrek' ? '🚗' : r.type === 'aankomst' ? '🏠' : (vt?.icon || '🏗️');
         const label = r.type === 'vertrek' ? {nl:'Vertrek',fr:'Départ',de:'Abfahrt'}[currentLang] :
