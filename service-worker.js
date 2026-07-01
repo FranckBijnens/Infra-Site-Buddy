@@ -2,7 +2,7 @@
    Maakt de app installeerbaar (PWA) en bruikbaar zonder signaal.
    Bij elke nieuwe versie van de app: verhoog het versienummer hieronder
    (bv. v1 -> v2), zodat de oude cache wordt opgeruimd. */
-const CACHE = 'verbraeken-werf-v13';
+const CACHE = 'verbraeken-werf-v14';
 const SHELL = [
   './',
   './index.html',
