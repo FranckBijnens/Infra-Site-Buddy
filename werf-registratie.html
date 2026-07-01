@@ -977,10 +977,13 @@ async function pullData() {
       if (Array.isArray(data.records)) {
         // Lokale registraties NIET overschrijven: samenvoegen op id (centraal wint),
         // en lokaal-only registraties alsnog naar de Sheet uploaden (backend is idempotent).
+        // 'deletedIds' (tombstones) zorgt dat bewust verwijderde records nooit terugkomen,
+        // ook niet vanaf een ander toestel dat nog een oude lokale kopie had.
         const central = data.records;
         const centralIds = new Set(central.map(r => String(r.id)));
-        const local = DB.get('records') || [];
-        const localOnly = local.filter(r => !centralIds.has(String(r.id)));
+        const deletedIds = new Set((data.deletedIds || []).map(String));
+        const local = (DB.get('records') || []).filter(r => !deletedIds.has(String(r.id)));
+        const localOnly = local.filter(r => !centralIds.has(String(r.id)) && !deletedIds.has(String(r.id)));
         DB.set('records', central.concat(localOnly));
         localOnly.forEach(r => { API.post('addRecord', { record: r }).catch(() => {}); });
       }
