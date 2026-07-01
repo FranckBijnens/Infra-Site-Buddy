@@ -495,6 +495,11 @@ body {
       <button class="btn btn-danger" onclick="clearHistoryRange()">
         🗑️ Geschiedenis wissen
       </button>
+      <div class="divider"></div>
+      <p class="text-sm text-muted mb-8">Of verwijder in één keer <strong>alle</strong> registraties, van alle medewerkers en alle periodes.</p>
+      <button class="btn btn-danger" onclick="clearAllHistory()">
+        🗑️ Alle geschiedenis wissen
+      </button>
     </div>
 
     <div class="card">
@@ -1885,6 +1890,24 @@ async function deleteSite(id) {
   DB.set('sites', (DB.get('sites')||[]).filter(s => s.id !== id));
   renderAdmin();
   await pushChange('deleteSite', { id });
+}
+
+async function clearAllHistory() {
+  const all = DB.get('records') || [];
+  if (!all.length) { showToast('Er is geen geschiedenis om te wissen'); return; }
+  if (!confirm(`Werkelijk ALLE ${all.length} registratie(s) van alle medewerkers en alle periodes definitief verwijderen? Dit kan niet ongedaan gemaakt worden.`)) return;
+  if (!confirm('Weet je het echt zeker? Dit verwijdert de volledige geschiedenis, ook uit de Google Sheet.')) return;
+
+  DB.set('records', []);
+  renderAdmin();
+  showToast('Bezig met wissen...');
+
+  const ok = await pushChange('deleteRecords', { all: true });
+  if (ok) {
+    showToast('Volledige geschiedenis gewist');
+  } else {
+    showToast('Lokaal gewist, maar de backend kon niet bevestigen — controleer je verbinding en synchroniseer opnieuw');
+  }
 }
 
 async function clearHistoryRange() {
