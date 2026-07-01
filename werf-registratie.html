@@ -293,6 +293,15 @@ body {
 </head>
 <body>
 
+<!-- ===== INSTALL-BANNER (verschijnt automatisch als installatie mogelijk is) ===== -->
+<div id="install-banner" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#1D4E8F;color:#fff;padding:12px 16px;box-shadow:0 -2px 10px rgba(0,0,0,0.2);align-items:center;justify-content:space-between;gap:10px;">
+  <span style="font-size:14px;">📲 Zet deze app op je startscherm</span>
+  <div style="display:flex;gap:8px;">
+    <button onclick="installApp()" style="background:#fff;color:#1D4E8F;border:none;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer;">Installeren</button>
+    <button onclick="dismissInstallBanner()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;">✕</button>
+  </div>
+</div>
+
 <!-- ===== SCREEN: LOGIN ===== -->
 <div id="screen-login" class="screen active">
   <div class="login-logo">
@@ -896,7 +905,7 @@ function initDB() {
   }
   if (!DB.get('records')) DB.set('records', []);
   if (!DB.get('visitTypes')) DB.set('visitTypes', DEFAULT_VISIT_TYPES);
-  if (!DB.get('sheetConfig')) DB.set('sheetConfig', { id:'', url:'' });
+  if (!DB.get('sheetConfig')) DB.set('sheetConfig', { id:'', url:'https://script.google.com/macros/s/AKfycbwhM3j8tG9fhPbrXv7IPwVN2kp07NvgBZTwwmqnSW9A-UQzJkH670fJ-ARvfFkQz2TB-Q/exec' });
   if (!DB.get('pending')) DB.set('pending', []);
 }
 
@@ -2026,6 +2035,44 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js').catch(function () {});
   });
 }
+
+// ============================================================
+// INSTALLATIE-BANNER — vangt Chrome/Android's installatievoorstel op
+// en toont een duidelijke knop, zodat de ontvanger de app meteen
+// op zijn startscherm kan zetten (iPhone/Safari toont dit niet:
+// daar blijft "Deel > Zet op beginscherm" de enige weg).
+// ============================================================
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function (e) {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if (!sessionStorage.getItem('installBannerDismissed') && !isRunningStandalone()) {
+    document.getElementById('install-banner').style.display = 'flex';
+  }
+});
+
+function isRunningStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+async function installApp() {
+  const banner = document.getElementById('install-banner');
+  if (!deferredInstallPrompt) { banner.style.display = 'none'; return; }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  banner.style.display = 'none';
+}
+
+function dismissInstallBanner() {
+  document.getElementById('install-banner').style.display = 'none';
+  sessionStorage.setItem('installBannerDismissed', '1');
+}
+
+window.addEventListener('appinstalled', function () {
+  document.getElementById('install-banner').style.display = 'none';
+});
 </script>
 </body>
 </html>
