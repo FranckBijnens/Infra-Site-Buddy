@@ -5,7 +5,7 @@
   "start_url": "./werf-registratie.html",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#1D4E8F",
+  "background_color": "#ffffff",
   "theme_color": "#1D4E8F",
   "lang": "nl",
   "icons": [
@@ -16,7 +16,7 @@
       "purpose": "any"
     },
     {
-      "src": "icon-192.png",
+      "src": "icon-192-maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
@@ -28,16 +28,10 @@
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    },
-    {
-      "src": "verbraeken-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
     }
   ]
 }
