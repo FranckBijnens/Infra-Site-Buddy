@@ -1617,9 +1617,9 @@ function renderActiveVisit() {
   document.getElementById('active-werf').textContent = v.werf;
   document.getElementById('active-type').textContent = vt ? vtLabel(vt) : v.bezoektypeLabel;
   document.getElementById('active-aankomst').textContent = v.aankomstTijd;
-  document.getElementById('active-gps').textContent = (v.gps_lat)
-    ? `📍 ${t('gpsVastgelegd')}: ${v.gps_lat}, ${v.gps_lon}`
-    : '⚠️ ' + t('gpsGeen');
+  document.getElementById('active-gps').textContent = currentUser.role === 'admin'
+    ? ((v.gps_lat) ? `📍 ${t('gpsVastgelegd')}: ${v.gps_lat}, ${v.gps_lon}` : '⚠️ ' + t('gpsGeen'))
+    : ((v.gps_lat) ? `📍 ${t('gpsVastgelegd')}` : '⚠️ ' + t('gpsGeen'));
   // Opmerkingen alleen vullen als het veld nog niet door de gebruiker is bewerkt
   const opm = document.getElementById('active-opmerkingen');
   if (document.activeElement !== opm) opm.value = v.opmerkingen || '';
@@ -1733,8 +1733,8 @@ function renderHistory() {
             ${r.werf ? `<div class="text-sm text-muted">${r.werf}</div>` : ''}
             ${r.gebruiker && currentUser.role==='admin' ? `<div class="text-sm text-muted">${r.gebruiker}</div>` : ''}
             ${r.opmerkingen ? `<div class="note">${r.opmerkingen}</div>` : ''}
-            ${r.gps_lat ? `<div class="text-sm text-muted">📍 ${{nl:'aankomst',fr:'arrivée',de:'Ankunft'}[currentLang]}: ${r.gps_lat}, ${r.gps_lon}</div>` : ''}
-            ${r.gps_vertrek_lat ? `<div class="text-sm text-muted">📍 ${{nl:'vertrek',fr:'départ',de:'Abfahrt'}[currentLang]}: ${r.gps_vertrek_lat}, ${r.gps_vertrek_lon}</div>` : ''}
+            ${(r.gps_lat && currentUser.role==='admin') ? `<div class="text-sm text-muted">📍 ${{nl:'aankomst',fr:'arrivée',de:'Ankunft'}[currentLang]}: ${r.gps_lat}, ${r.gps_lon}</div>` : ''}
+            ${(r.gps_vertrek_lat && currentUser.role==='admin') ? `<div class="text-sm text-muted">📍 ${{nl:'vertrek',fr:'départ',de:'Abfahrt'}[currentLang]}: ${r.gps_vertrek_lat}, ${r.gps_vertrek_lon}</div>` : ''}
           </div>
         </div>`;
       }).join('')}
@@ -2030,10 +2030,16 @@ function updateSheetsStatus() {
 // ============================================================
 function exportCSV() {
   const records = DB.get('records') || [];
-  const mine = currentUser.role === 'admin' ? records : records.filter(r => r.gebruikerId === currentUser.id);
-  const rows = [['Datum','Aankomst','Vertrek','Medewerker','Type','Werf','Bezoektype','Duur (min)','GPS Lat (aankomst)','GPS Lon (aankomst)','GPS Lat (vertrek)','GPS Lon (vertrek)','Opmerkingen']];
+  const isAdmin = currentUser.role === 'admin';
+  const mine = isAdmin ? records : records.filter(r => r.gebruikerId === currentUser.id);
+  const rows = [isAdmin
+    ? ['Datum','Aankomst','Vertrek','Medewerker','Type','Werf','Bezoektype','Duur (min)','GPS Lat (aankomst)','GPS Lon (aankomst)','GPS Lat (vertrek)','GPS Lon (vertrek)','Opmerkingen']
+    : ['Datum','Aankomst','Vertrek','Medewerker','Type','Werf','Bezoektype','Duur (min)','Opmerkingen']];
   mine.sort((a,b)=>a.datum.localeCompare(b.datum)||(a.tijd.localeCompare(b.tijd)));
-  mine.forEach(r => rows.push([r.datum,r.tijd,r.vertrek_tijd||'',r.gebruiker||'',r.type,r.werf||'',r.bezoektypeLabel||r.bezoektype||'',r.duur||'',r.gps_lat||'',r.gps_lon||'',r.gps_vertrek_lat||'',r.gps_vertrek_lon||'',r.opmerkingen||'']));
+  mine.forEach(r => rows.push(isAdmin
+    ? [r.datum,r.tijd,r.vertrek_tijd||'',r.gebruiker||'',r.type,r.werf||'',r.bezoektypeLabel||r.bezoektype||'',r.duur||'',r.gps_lat||'',r.gps_lon||'',r.gps_vertrek_lat||'',r.gps_vertrek_lon||'',r.opmerkingen||'']
+    : [r.datum,r.tijd,r.vertrek_tijd||'',r.gebruiker||'',r.type,r.werf||'',r.bezoektypeLabel||r.bezoektype||'',r.duur||'',r.opmerkingen||'']
+  ));
   const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
