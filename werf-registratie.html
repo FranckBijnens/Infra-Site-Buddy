@@ -905,7 +905,7 @@ function idExists_(sh, id) {
 // ============================================================
 // DATA STORE
 // ============================================================
-const APP_VERSION = 'build 1.9';
+const APP_VERSION = 'build 1.15';
 const DB = {
   get(key, def) { try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e) { return def; } },
   set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
